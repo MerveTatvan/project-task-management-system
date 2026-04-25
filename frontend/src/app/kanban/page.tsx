@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import KanbanColumn from "../components/KanbanColumn";
+import KanbanColumn from "../../components/KanbanColumn";
 
 import {
   DndContext,
