@@ -1,0 +1,32 @@
+{
+  "users": [
+    {
+      "id": 1777317119577,
+      "email": "test123@test.com",
+      "password": "$2b$10$gdTXRfil2LjuRERZeV.dI.w6hpv5uXDTWVTghnbuGiEuySP1D6cNC"
+    },
+    {
+      "id": 1777366674490,
+      "email": "admin@test.com",
+      "password": "$2b$10$aMGzCqZlz6xMb2yZTwTlF.McdfG00Q7aAUOqstRo8lhw9dKNrDnuS"
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1777317834309,
+      "title": "İLK GÖREV",
+      "dueDate": null,
+      "team": null,
+      "status": "todo",
+      "userId": 1777317119577
+    },
+    {
+      "id": 1777358109640,
+      "title": "İKİNCİ GÖREV ",
+      "dueDate": "2026-04-16",
+      "team": "ARGE",
+      "status": "todo",
+      "userId": 1777317119577
+    }
+  ]
+}
