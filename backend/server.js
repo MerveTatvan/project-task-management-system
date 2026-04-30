@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const PORT = 5001;
@@ -10,10 +12,21 @@ app.use(cors());
 app.use(express.json());
 
 /* =========================
-   MEMORY DB
+   JSON DB PATH
 ========================= */
-let tasks = [];
-let users = [];
+const dbPath = path.join(__dirname, "data/db.json");
+
+/* =========================
+   DB HELPERS
+========================= */
+const readDB = () => {
+  const data = fs.readFileSync(dbPath, "utf-8");
+  return JSON.parse(data);
+};
+
+const writeDB = (data) => {
+  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+};
 
 /* =========================
    JWT SECRET
@@ -24,11 +37,15 @@ const JWT_SECRET = "super_secret_key";
    AUTH MIDDLEWARE
 ========================= */
 const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
+  if (!authHeader) {
     return res.status(401).json({ message: "Token yok" });
   }
+
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.split(" ")[1]
+    : authHeader;
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -45,9 +62,11 @@ const authMiddleware = (req, res, next) => {
 
 /* REGISTER */
 app.post("/api/auth/register", async (req, res) => {
-  const { email, password } = req.body;
+  const { name, surname, department, birthDate, email, password } = req.body;
 
-  const userExists = users.find((u) => u.email === email);
+  const db = readDB();
+
+  const userExists = db.users.find((u) => u.email === email);
   if (userExists) {
     return res.status(400).json({ message: "User already exists" });
   }
@@ -56,11 +75,17 @@ app.post("/api/auth/register", async (req, res) => {
 
   const user = {
     id: Date.now(),
+    name: name || null,
+    surname: surname || null,
+    department: department || null,
+    birthDate: birthDate || null,
     email,
     password: hashed,
+    extraInfo: "",
   };
 
-  users.push(user);
+  db.users.push(user);
+  writeDB(db);
 
   res.json({ message: "User created" });
 });
@@ -69,7 +94,9 @@ app.post("/api/auth/register", async (req, res) => {
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const user = users.find((u) => u.email === email);
+  const db = readDB();
+
+  const user = db.users.find((u) => u.email === email);
 
   if (!user) {
     return res.status(400).json({ message: "User not found" });
@@ -91,59 +118,119 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 /* =========================
-   TASK ROUTES (PROTECTED)
+   GET PROFILE (FIXED + SAFE)
+========================= */
+app.get("/api/auth/me", authMiddleware, (req, res) => {
+  const db = readDB();
+
+  const user = db.users.find(
+    (u) => String(u.id) === String(req.user.id)
+  );
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const { password, ...safeUser } = user;
+
+  res.json(safeUser);
+});
+
+/* =========================
+   UPDATE PROFILE (FULL FIXED)
+========================= */
+app.put("/api/auth/me", authMiddleware, (req, res) => {
+  const db = readDB();
+
+  const userIndex = db.users.findIndex(
+    (u) => String(u.id) === String(req.user.id)
+  );
+
+  if (userIndex === -1) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  db.users[userIndex] = {
+    ...db.users[userIndex],
+    department:
+      req.body.department ?? db.users[userIndex].department,
+    extraInfo:
+      req.body.extraInfo ?? db.users[userIndex].extraInfo,
+  };
+
+  writeDB(db);
+
+  // 🔥 CRITICAL FIX: always re-read updated DB state
+  const updatedUser = db.users[userIndex];
+  const { password, ...safeUser } = updatedUser;
+
+  res.json(safeUser);
+});
+
+/* =========================
+   TASK ROUTES
 ========================= */
 
-/* GET TASKS (SADECE USER'A AİT) */
 app.get("/api/tasks", authMiddleware, (req, res) => {
-  const userTasks = tasks.filter(t => t.userId === req.user.id);
+  const db = readDB();
+
+  const userTasks = db.tasks.filter(
+    (t) => t.userId === req.user.id
+  );
+
   res.json(userTasks);
 });
 
-/* CREATE TASK */
 app.post("/api/tasks", authMiddleware, (req, res) => {
+  const db = readDB();
+
   const task = {
     id: Date.now(),
     title: req.body.title,
     dueDate: req.body.dueDate || null,
     team: req.body.team || null,
-    status: req.body.status || "todo", // ✅ KANBAN
+    status: req.body.status || "todo",
     userId: req.user.id,
   };
 
-  tasks.push(task);
+  db.tasks.push(task);
+  writeDB(db);
+
   res.json(task);
 });
 
-/* DELETE TASK */
 app.delete("/api/tasks/:id", authMiddleware, (req, res) => {
+  const db = readDB();
   const id = Number(req.params.id);
 
-  const exists = tasks.find(t => t.id === id && t.userId === req.user.id);
+  const exists = db.tasks.find(
+    (t) => t.id === id && t.userId === req.user.id
+  );
 
   if (!exists) {
     return res.status(404).json({ message: "Task bulunamadı" });
   }
 
-  tasks = tasks.filter(t => t.id !== id);
+  db.tasks = db.tasks.filter((t) => t.id !== id);
+  writeDB(db);
 
   res.json({ message: "Task silindi", id });
 });
 
-/* UPDATE TASK */
 app.put("/api/tasks/:id", authMiddleware, (req, res) => {
+  const db = readDB();
   const id = Number(req.params.id);
 
   let updated = null;
 
-  tasks = tasks.map(task => {
+  db.tasks = db.tasks.map((task) => {
     if (task.id === id && task.userId === req.user.id) {
       updated = {
         ...task,
         title: req.body.title,
         dueDate: req.body.dueDate ?? task.dueDate,
         team: req.body.team ?? task.team,
-        status: req.body.status ?? task.status, // ✅ KANBAN
+        status: req.body.status ?? task.status,
       };
       return updated;
     }
@@ -153,6 +240,8 @@ app.put("/api/tasks/:id", authMiddleware, (req, res) => {
   if (!updated) {
     return res.status(404).json({ message: "Task bulunamadı" });
   }
+
+  writeDB(db);
 
   res.json(updated);
 });

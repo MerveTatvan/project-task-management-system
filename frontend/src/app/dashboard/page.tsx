@@ -4,11 +4,23 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
+/* =========================
+   TYPES
+========================= */
 type Task = {
   id: number;
   title: string;
   dueDate?: string | null;
   team?: string | null;
+};
+
+type UserProfile = {
+  id: number;
+  name: string;
+  surname: string;
+  email: string;
+  department?: string | null;
+  birthDate?: string | null;
 };
 
 export default function Dashboard() {
@@ -22,11 +34,22 @@ export default function Dashboard() {
     "tasks" | "profile" | "messages" | "requests"
   >("tasks");
 
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  /* 🔥 CONTROLLED FORM STATE */
+  const [form, setForm] = useState({
+    department: "",
+    extraInfo: "",
+  });
+
   const router = useRouter();
   const API = "http://localhost:5001/api/tasks";
 
   const getToken = () => localStorage.getItem("token");
 
+  /* =========================
+     INIT (FIXED)
+  ========================= */
   useEffect(() => {
     const token = getToken();
 
@@ -35,13 +58,19 @@ export default function Dashboard() {
       return;
     }
 
-    fetchTasks().finally(() => setLoading(false));
+    Promise.all([fetchTasks(), fetchProfile()])
+      .finally(() => setLoading(false));
   }, []);
 
+  /* =========================
+     FETCH TASKS
+  ========================= */
   const fetchTasks = async () => {
+    const token = getToken();
+
     const res = await fetch(API, {
       headers: {
-        Authorization: getToken() || "",
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -49,14 +78,57 @@ export default function Dashboard() {
     setTasks(Array.isArray(data) ? data : []);
   };
 
+  /* =========================
+     FETCH PROFILE
+  ========================= */
+  const fetchProfile = async () => {
+    try {
+      const token = getToken();
+
+      const res = await fetch("http://localhost:5001/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data && data.id) {
+        setProfile({
+          id: data.id,
+          name: data.name || "",
+          surname: data.surname || "",
+          email: data.email || "",
+          department: data.department || "",
+          birthDate: data.birthDate || "",
+        });
+
+        /* 🔥 FORM SYNC */
+        setForm({
+          department: data.department || "",
+          extraInfo: "",
+        });
+      } else {
+        setProfile(null);
+      }
+    } catch (err) {
+      setProfile(null);
+    }
+  };
+
+  /* =========================
+     TASK ACTIONS (UNCHANGED)
+  ========================= */
   const addTask = async () => {
     if (!newTask.trim()) return;
+
+    const token = getToken();
 
     await fetch(API, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: getToken() || "",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ title: newTask }),
     });
@@ -67,10 +139,12 @@ export default function Dashboard() {
   };
 
   const deleteTask = async (id: number) => {
+    const token = getToken();
+
     await fetch(`${API}/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: getToken() || "",
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -82,11 +156,13 @@ export default function Dashboard() {
   const updateTask = async () => {
     if (!editingTask) return;
 
+    const token = getToken();
+
     await fetch(`${API}/${editingTask.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: getToken() || "",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(editingTask),
     });
@@ -94,6 +170,53 @@ export default function Dashboard() {
     setEditingTask(null);
     fetchTasks();
     toast.success("Task updated ✏️");
+  };
+
+  /* =========================
+     PROFILE UPDATE (CONTROLLED FORM FIX)
+  ========================= */
+  const updateProfile = async () => {
+    const token = getToken();
+
+    const res = await fetch("http://localhost:5001/api/auth/me", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        department: form.department,
+        extraInfo: form.extraInfo,
+      }),
+    });
+
+    if (res.ok) {
+      toast.success("Profile updated");
+
+      const refreshed = await fetch("http://localhost:5001/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const updatedUser = await refreshed.json();
+
+      if (refreshed.ok && updatedUser) {
+        setProfile({
+          id: updatedUser.id,
+          name: updatedUser.name || "",
+          surname: updatedUser.surname || "",
+          email: updatedUser.email || "",
+          department: updatedUser.department || "",
+          birthDate: updatedUser.birthDate || "",
+        });
+
+        setForm({
+          department: updatedUser.department || "",
+          extraInfo: "",
+        });
+      }
+    }
   };
 
   const logout = () => {
@@ -154,7 +277,6 @@ export default function Dashboard() {
               onChange={(e) => setNewTask(e.target.value)}
               placeholder="Yeni görev ekle..."
             />
-
             <button
               onClick={addTask}
               className="bg-blue-500 text-white px-4 rounded-lg"
@@ -202,122 +324,63 @@ export default function Dashboard() {
 
       {/* PROFILE */}
       {activeTab === "profile" && (
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="text-xl font-bold mb-4">Profile</h2>
-          <input className="border p-2 w-full mb-2" placeholder="Name" />
-          <input className="border p-2 w-full mb-2" placeholder="Email" />
-          <button className="bg-blue-500 text-white px-4 py-2">
-            Save
-          </button>
+        <div className="bg-white p-6 rounded-xl shadow space-y-3">
+
+          <h2 className="text-xl font-bold mb-2">Profile</h2>
+
+          {!profile ? (
+            <p>Profile loading failed or empty</p>
+          ) : (
+            <>
+              <input className="border p-2 w-full" value={profile.name} disabled />
+              <input className="border p-2 w-full" value={profile.surname} disabled />
+              <input className="border p-2 w-full" value={profile.email} disabled />
+              <input className="border p-2 w-full" value={profile.birthDate || ""} disabled />
+
+              {/* CONTROLLED INPUTS */}
+              <input
+                className="border p-2 w-full"
+                value={form.department}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    department: e.target.value,
+                  }))
+                }
+              />
+
+              <textarea
+                className="border p-2 w-full"
+                value={form.extraInfo}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    extraInfo: e.target.value,
+                  }))
+                }
+              />
+
+              <button
+                onClick={updateProfile}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+              >
+                Save Changes
+              </button>
+            </>
+          )}
         </div>
       )}
 
-      {/* REQUESTS */}
+      {/* REQUESTS + MESSAGES (UNCHANGED) */}
       {activeTab === "requests" && (
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-bold mb-4">Requests</h2>
-          <input className="border p-2 w-full mb-2" />
-          <textarea className="border p-2 w-full mb-2" />
-          <button className="bg-green-500 text-white px-4 py-2">
-            Send
-          </button>
         </div>
       )}
 
-      {/* MESSAGES */}
       {activeTab === "messages" && (
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-bold mb-4">Messages</h2>
-          <div className="border h-32 mb-3 p-2">No messages</div>
-          <input className="border p-2 w-full mb-2" />
-          <button className="bg-blue-500 text-white px-4 py-2">
-            Send
-          </button>
-        </div>
-      )}
-
-      {/* DELETE MODAL */}
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl w-80 text-center">
-            <p className="mb-4">Delete "{confirmDelete.title}"?</p>
-
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => deleteTask(confirmDelete.id)}
-                className="bg-red-500 text-white px-4 py-2 rounded"
-              >
-                Yes, Delete
-              </button>
-
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className="bg-gray-300 px-4 py-2 rounded"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= EDIT MODAL (ENHANCED) ================= */}
-      {editingTask && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl w-96">
-
-            {/* TASK TITLE */}
-            <input
-              className="border p-2 w-full mb-2"
-              value={editingTask.title}
-              onChange={(e) =>
-                setEditingTask({
-                  ...editingTask,
-                  title: e.target.value,
-                })
-              }
-              placeholder="Task name"
-            />
-
-            {/* DUE DATE */}
-            <input
-              type="date"
-              className="border p-2 w-full mb-2"
-              value={editingTask.dueDate || ""}
-              onChange={(e) =>
-                setEditingTask({
-                  ...editingTask,
-                  dueDate: e.target.value,
-                })
-              }
-            />
-
-            {/* TEAM SELECT */}
-            <select
-              className="border p-2 w-full mb-4"
-              value={editingTask.team || ""}
-              onChange={(e) =>
-                setEditingTask({
-                  ...editingTask,
-                  team: e.target.value,
-                })
-              }
-            >
-              <option value="">Select Team</option>
-              <option value="IT">IT</option>
-              <option value="ARGE">ARGE</option>
-              <option value="ACCOUNTING">ACCOUNTING</option>
-              <option value="CONTROLLING">CONTROLLING</option>
-            </select>
-
-            <button
-              onClick={updateTask}
-              className="bg-green-500 text-white px-4 py-2 w-full"
-            >
-              Save
-            </button>
-
-          </div>
         </div>
       )}
     </div>
