@@ -18,6 +18,16 @@
       "birthDate": "2026-04-30",
       "email": "merve@test.com",
       "password": "$2b$10$PMwsPciyCYoOXVdaeL76IuAAiVAUG1u.o6RkNRQj0FCApfvOPE3L."
+    },
+    {
+      "id": 1777569385549,
+      "name": "Esra",
+      "surname": "Çelik",
+      "department": "IT",
+      "birthDate": "2003-04-21",
+      "email": "esra999@test.com",
+      "password": "$2b$10$tcsPEGuXH01EeF/Of8WqEO2o8fAFTI9VYjKAfDTDIVqUaij6nHWnS",
+      "extraInfo": ""
     }
   ],
   "tasks": [

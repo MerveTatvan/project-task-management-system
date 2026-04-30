@@ -18,7 +18,7 @@ export default function Home() {
 
   const [loading, setLoading] = useState(true);
 
-  const API = "http://localhost:5001/api/tasks";
+  const API = `${process.env.NEXT_PUBLIC_API_URL}/api/tasks`;
 
   /* LOAD */
   useEffect(() => {
@@ -123,8 +123,6 @@ export default function Home() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Task Dashboard</h1>
 
@@ -139,7 +137,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* ADD */}
       <div className="flex gap-2 mb-6">
         <input
           className="border p-2 flex-1 rounded"
@@ -156,14 +153,12 @@ export default function Home() {
         </button>
       </div>
 
-      {/* LIST */}
       <div className="space-y-3">
         {tasks.length === 0 ? (
           <p className="text-gray-500">Henüz task yok 🚀</p>
         ) : (
           tasks.map((task) => (
             <div key={task.id} className="p-4 border rounded flex justify-between items-center">
-
               <div>
                 <p className="font-semibold text-lg">
                   {task.title || "Untitled Task"}
@@ -197,24 +192,19 @@ export default function Home() {
                   Delete
                 </button>
               </div>
-
             </div>
           ))
         )}
       </div>
 
-      {/* DELETE MODAL */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-
           <div className="bg-white p-6 rounded shadow w-80 text-center">
-
             <p className="mb-4 font-medium">
               “{confirmDelete.title}” silmek istediğine emin misin?
             </p>
 
             <div className="flex justify-center gap-4">
-
               <button
                 onClick={() => deleteTask(confirmDelete.id)}
                 className="bg-red-500 text-white px-4 py-1 rounded"
@@ -228,22 +218,16 @@ export default function Home() {
               >
                 İptal
               </button>
-
             </div>
-
           </div>
         </div>
       )}
 
-      {/* EDIT MODAL */}
       {editingTask && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-
           <div className="bg-white p-6 rounded shadow w-96">
-
             <h2 className="text-lg font-bold mb-4">Görev Düzenle</h2>
 
-            {/* TITLE */}
             <label className="text-sm">Görev Adı</label>
             <input
               className="border w-full p-2 mb-3 rounded"
@@ -253,7 +237,6 @@ export default function Home() {
               }
             />
 
-            {/* DATE */}
             <label className="text-sm">Son Tarih</label>
             <input
               type="date"
@@ -264,7 +247,6 @@ export default function Home() {
               }
             />
 
-            {/* TEAM */}
             <label className="text-sm">Ekip</label>
             <select
               className="border w-full p-2 mb-4 rounded"
@@ -295,11 +277,9 @@ export default function Home() {
                 Kapat
               </button>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }

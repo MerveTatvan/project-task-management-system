@@ -4,9 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-/* =========================
-   TYPES
-========================= */
 type Task = {
   id: number;
   title: string;
@@ -36,20 +33,18 @@ export default function Dashboard() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
-  /* 🔥 CONTROLLED FORM STATE */
   const [form, setForm] = useState({
     department: "",
     extraInfo: "",
   });
 
   const router = useRouter();
-  const API = "http://localhost:5001/api/tasks";
+
+  const API = `${process.env.NEXT_PUBLIC_API_URL}/api/tasks`;
+  const AUTH_API = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`;
 
   const getToken = () => localStorage.getItem("token");
 
-  /* =========================
-     INIT (FIXED)
-  ========================= */
   useEffect(() => {
     const token = getToken();
 
@@ -58,13 +53,11 @@ export default function Dashboard() {
       return;
     }
 
-    Promise.all([fetchTasks(), fetchProfile()])
-      .finally(() => setLoading(false));
+    Promise.all([fetchTasks(), fetchProfile()]).finally(() =>
+      setLoading(false)
+    );
   }, []);
 
-  /* =========================
-     FETCH TASKS
-  ========================= */
   const fetchTasks = async () => {
     const token = getToken();
 
@@ -78,14 +71,11 @@ export default function Dashboard() {
     setTasks(Array.isArray(data) ? data : []);
   };
 
-  /* =========================
-     FETCH PROFILE
-  ========================= */
   const fetchProfile = async () => {
     try {
       const token = getToken();
 
-      const res = await fetch("http://localhost:5001/api/auth/me", {
+      const res = await fetch(AUTH_API, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -103,7 +93,6 @@ export default function Dashboard() {
           birthDate: data.birthDate || "",
         });
 
-        /* 🔥 FORM SYNC */
         setForm({
           department: data.department || "",
           extraInfo: "",
@@ -115,11 +104,7 @@ export default function Dashboard() {
       setProfile(null);
     }
   };
-
-  /* =========================
-     TASK ACTIONS (UNCHANGED)
-  ========================= */
-  const addTask = async () => {
+    const addTask = async () => {
     if (!newTask.trim()) return;
 
     const token = getToken();
@@ -172,13 +157,10 @@ export default function Dashboard() {
     toast.success("Task updated ✏️");
   };
 
-  /* =========================
-     PROFILE UPDATE (CONTROLLED FORM FIX)
-  ========================= */
   const updateProfile = async () => {
     const token = getToken();
 
-    const res = await fetch("http://localhost:5001/api/auth/me", {
+    const res = await fetch(AUTH_API, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -193,7 +175,7 @@ export default function Dashboard() {
     if (res.ok) {
       toast.success("Profile updated");
 
-      const refreshed = await fetch("http://localhost:5001/api/auth/me", {
+      const refreshed = await fetch(AUTH_API, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -233,11 +215,8 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  return (
+    return (
     <div className="min-h-screen bg-gray-50 p-6 max-w-4xl mx-auto">
-
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Task Dashboard</h1>
@@ -252,7 +231,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* TABS */}
       <div className="flex gap-2 mb-6">
         {["tasks", "profile", "messages", "requests"].map((tab) => (
           <button
@@ -267,7 +245,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* TASKS */}
       {activeTab === "tasks" && (
         <>
           <div className="flex gap-2 mb-6">
@@ -277,6 +254,7 @@ export default function Dashboard() {
               onChange={(e) => setNewTask(e.target.value)}
               placeholder="Yeni görev ekle..."
             />
+
             <button
               onClick={addTask}
               className="bg-blue-500 text-white px-4 rounded-lg"
@@ -322,10 +300,8 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* PROFILE */}
       {activeTab === "profile" && (
         <div className="bg-white p-6 rounded-xl shadow space-y-3">
-
           <h2 className="text-xl font-bold mb-2">Profile</h2>
 
           {!profile ? (
@@ -337,7 +313,6 @@ export default function Dashboard() {
               <input className="border p-2 w-full" value={profile.email} disabled />
               <input className="border p-2 w-full" value={profile.birthDate || ""} disabled />
 
-              {/* CONTROLLED INPUTS */}
               <input
                 className="border p-2 w-full"
                 value={form.department}
@@ -371,7 +346,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* REQUESTS + MESSAGES (UNCHANGED) */}
       {activeTab === "requests" && (
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-bold mb-4">Requests</h2>
