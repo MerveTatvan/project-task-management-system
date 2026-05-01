@@ -4,40 +4,61 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const [isRegister, setIsRegister] = useState(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [department, setDepartment] = useState("");
 
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [regMessage, setRegMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const router = useRouter();
 
+  const passwordRules = {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*]/.test(password),
+    noName:
+      password.length === 0 ||
+      ((!name || !password.toLowerCase().includes(name.toLowerCase())) &&
+        (!surname || !password.toLowerCase().includes(surname.toLowerCase()))),
+  };
+
+  const isPasswordValid =
+    passwordRules.length &&
+    passwordRules.upper &&
+    passwordRules.lower &&
+    passwordRules.number &&
+    passwordRules.special &&
+    passwordRules.noName;
+
   const login = async () => {
     setLoading(true);
-    setError("");
+    setMessage("");
+    setIsSuccess(false);
+
+    if (!email.trim() || !password.trim()) {
+      setMessage("Please enter email and password");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
-      }
 
       if (data.token) {
         localStorage.setItem("token", data.token);
@@ -46,91 +67,139 @@ export default function LoginPage() {
 
         router.push("/dashboard");
       } else {
-        setError("Token alınamadı");
+        setMessage("Login failed");
       }
-    } catch (err: any) {
-      setError(err.message || "Login başarısız");
+    } catch {
+      setMessage("Server error");
     } finally {
       setLoading(false);
     }
   };
 
   const register = async () => {
-    setRegMessage("");
+    setLoading(true);
+    setMessage("");
+    setIsSuccess(false);
+
+    if (
+      !name.trim() ||
+      !surname.trim() ||
+      !birthDate.trim() ||
+      !department.trim() ||
+      !email.trim() ||
+      !password.trim()
+    ) {
+      setMessage("Please fill in all fields");
+      setLoading(false);
+      return;
+    }
+
+    if (!isPasswordValid) {
+      setMessage("Password does not meet the requirements");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
           surname,
           birthDate,
           department,
-          email: regEmail,
-          password: regPassword,
+          email,
+          password,
         }),
       });
 
       const text = await res.text();
 
-      if (!res.ok) {
-        throw new Error(text || "Register hatası");
+      if (!res.ok || text.includes("zaten")) {
+        setMessage(text || "Register failed");
+        return;
       }
 
-      setRegMessage(text || "Üye oldun! Şimdi giriş yapabilirsin ✅");
+      setMessage(text || "Registered successfully. You can login now.");
+      setIsSuccess(true);
+      setIsRegister(false);
 
       setName("");
       setSurname("");
       setBirthDate("");
       setDepartment("");
-      setRegEmail("");
-      setRegPassword("");
-    } catch (err: any) {
-      setRegMessage(err.message || "Register hatası");
+      setPassword("");
+    } catch {
+      setMessage("Register error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="h-screen flex items-center justify-center bg-gray-100 gap-10">
-      <div className="bg-white p-6 rounded shadow w-80 overflow-y-auto max-h-[90vh]">
-        <h1 className="text-xl font-bold mb-4">Üye Ol</h1>
+  const Rule = ({ ok, text }: { ok: boolean; text: string }) => (
+    <p className={`text-xs ${ok ? "text-green-600" : "text-red-500"}`}>
+      • {text}
+    </p>
+  );
 
-        {regMessage && (
-          <p className="text-sm mb-2 text-green-600">{regMessage}</p>
+  return (
+    <div className="h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-6 rounded-xl shadow w-80 space-y-4">
+        <h1 className="text-xl font-bold text-center">
+          {isRegister ? "Create Account" : "Login"}
+        </h1>
+
+        {message && (
+          <p className={`text-sm text-center ${isSuccess ? "text-green-600" : "text-red-500"}`}>
+            {message}
+          </p>
         )}
 
-        <input className="border w-full p-2 mb-2" placeholder="Ad" value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="border w-full p-2 mb-2" placeholder="Soyad" value={surname} onChange={(e) => setSurname(e.target.value)} />
-        <input type="date" className="border w-full p-2 mb-2" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
-        <input className="border w-full p-2 mb-2" placeholder="Departman" value={department} onChange={(e) => setDepartment(e.target.value)} />
-        <input className="border w-full p-2 mb-2" placeholder="Email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} />
-        <input type="password" className="border w-full p-2 mb-4" placeholder="Password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} />
+        {isRegister && (
+          <>
+            <input className="border w-full p-2" placeholder="First Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="border w-full p-2" placeholder="Last Name" value={surname} onChange={(e) => setSurname(e.target.value)} />
+            <input type="date" className="border w-full p-2" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+            <input className="border w-full p-2" placeholder="Department" value={department} onChange={(e) => setDepartment(e.target.value)} />
+          </>
+        )}
 
-        <button onClick={register} className="w-full p-2 text-white rounded bg-green-500 hover:bg-green-600">
-          Üye Ol
-        </button>
-      </div>
+        <input className="border w-full p-2" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
 
-      <div className="bg-white p-6 rounded shadow w-80">
-        <h1 className="text-xl font-bold mb-4">Login</h1>
+        <input type="password" className="border w-full p-2" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
-        {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-
-        <input className="border w-full p-2 mb-2" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input type="password" className="border w-full p-2 mb-4" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        {isRegister && (
+          <div className="space-y-1">
+            <Rule ok={passwordRules.length} text="At least 8 characters" />
+            <Rule ok={passwordRules.upper} text="Contains uppercase letter" />
+            <Rule ok={passwordRules.lower} text="Contains lowercase letter" />
+            <Rule ok={passwordRules.number} text="Contains number" />
+            <Rule ok={passwordRules.special} text="Contains special character (!@#$%^&*)" />
+            <Rule ok={passwordRules.noName} text="Must not include your first or last name" />
+          </div>
+        )}
 
         <button
-          onClick={login}
+          onClick={isRegister ? register : login}
           disabled={loading}
-          className={`w-full p-2 text-white rounded ${
-            loading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
-          }`}
+          className="w-full bg-blue-500 text-white p-2 rounded"
         >
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "Please wait..." : isRegister ? "Sign Up" : "Login"}
         </button>
+
+        <p className="text-center text-sm">
+          {isRegister ? "Already have an account?" : "Not a member?"}{" "}
+          <span
+            onClick={() => {
+              setIsRegister(!isRegister);
+              setMessage("");
+            }}
+            className="text-blue-500 cursor-pointer"
+          >
+            {isRegister ? "Login" : "Sign up"}
+          </span>
+        </p>
       </div>
     </div>
   );

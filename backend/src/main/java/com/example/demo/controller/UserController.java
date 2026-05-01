@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = "*")
 public class UserController {
 
     @Autowired
@@ -20,14 +21,35 @@ public class UserController {
     }
 
     @PutMapping("/{id}/role")
-    public String updateUserRole(@PathVariable Long id, @RequestBody String role) {
+    public String updateUserRole(
+            @PathVariable Long id,
+            @RequestParam String adminEmail,
+            @RequestBody String role
+    ) {
+        User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (!"ADMIN".equals(admin.getRole())) {
+            return "You are not authorized";
+        }
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setRole(role);
+        user.setRole(role.replace("\"", ""));
         userRepository.save(user);
 
         return "Role updated";
+    }
+
+    @PutMapping("/update/{email}")
+    public User updateUser(@PathVariable String email, @RequestBody User updatedUser) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setExtraInfo(updatedUser.getExtraInfo());
+
+        return userRepository.save(user);
     }
 }

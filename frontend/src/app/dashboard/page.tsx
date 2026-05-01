@@ -78,7 +78,7 @@ export default function Dashboard() {
 
   const addTask = async () => {
     if (!newTask.trim()) {
-      toast.error("Görev başlığı boş olamaz");
+      toast.error("Task title cannot be empty");
       return;
     }
 
@@ -100,6 +100,24 @@ export default function Dashboard() {
     setNewTask("");
     fetchTasks();
     toast.success("Task created 🎉");
+  };
+
+  const updateAbout = async () => {
+    if (!profile) return;
+
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/users/update/${profile.email}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(profile),
+      }
+    );
+
+    toast.success("About updated");
+    fetchProfile();
   };
 
   const logout = () => {
@@ -127,12 +145,24 @@ export default function Dashboard() {
           <p className="text-sm text-gray-500">Manage everything</p>
         </div>
 
-        <button
-          onClick={logout}
-          className="bg-red-500 text-white px-4 py-2 rounded-lg"
-        >
-          Logout
-        </button>
+        <div className="flex gap-2">
+          {typeof window !== "undefined" &&
+            localStorage.getItem("role") === "ADMIN" && (
+              <button
+                onClick={() => router.push("/admin")}
+                className="bg-black text-white px-4 py-2 rounded-lg"
+              >
+                Role Update
+              </button>
+            )}
+
+          <button
+            onClick={logout}
+            className="bg-red-500 text-white px-4 py-2 rounded-lg"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -156,7 +186,7 @@ export default function Dashboard() {
               className="border p-2 flex-1 rounded-lg"
               value={newTask}
               onChange={(e) => setNewTask(e.target.value)}
-              placeholder="Yeni görev ekle..."
+              placeholder="Add new task..."
             />
 
             <button
@@ -169,7 +199,7 @@ export default function Dashboard() {
 
           <div className="space-y-3">
             {tasks.length === 0 ? (
-              <p className="text-gray-500">Henüz task yok 🚀</p>
+              <p className="text-gray-500">No tasks yet 🚀</p>
             ) : (
               tasks.map((task) => (
                 <div
@@ -206,18 +236,33 @@ export default function Dashboard() {
             <p>Profile loading failed or empty</p>
           ) : (
             <>
-              <input className="border p-2 w-full" value={profile.name} disabled />
-              <input className="border p-2 w-full" value={profile.surname} disabled />
-              <input className="border p-2 w-full" value={profile.email} disabled />
-              <input className="border p-2 w-full" value={profile.birthDate} disabled />
-              <input className="border p-2 w-full" value={profile.department} disabled />
-              <input className="border p-2 w-full" value={profile.role} disabled />
+              <input className="border p-2 w-full" value={profile.name || ""} disabled />
+              <input className="border p-2 w-full" value={profile.surname || ""} disabled />
+              <input className="border p-2 w-full" value={profile.email || ""} disabled />
+              <input className="border p-2 w-full" value={profile.birthDate || ""} disabled />
+              <input className="border p-2 w-full" value={profile.department || ""} disabled />
+              <input className="border p-2 w-full" value={profile.role || ""} disabled />
 
-              <textarea
-                className="border p-2 w-full"
-                value={profile.extraInfo}
-                disabled
-              />
+              <div className="flex gap-2 items-start">
+                <textarea
+                  className="border p-2 w-full text-sm"
+                  placeholder="About..."
+                  value={profile.extraInfo || ""}
+                  onChange={(e) =>
+                    setProfile({
+                      ...profile,
+                      extraInfo: e.target.value,
+                    })
+                  }
+                />
+
+                <button
+                  onClick={updateAbout}
+                  className="bg-blue-500 text-white px-3 py-2 rounded"
+                >
+                  Save
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -226,14 +271,14 @@ export default function Dashboard() {
       {activeTab === "requests" && (
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-bold mb-4">Requests</h2>
-          <p className="text-gray-500">Henüz request sistemi eklenmedi.</p>
+          <p className="text-gray-500">Request system has not been added yet.</p>
         </div>
       )}
 
       {activeTab === "messages" && (
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-bold mb-4">Messages</h2>
-          <p className="text-gray-500">Henüz mesaj sistemi eklenmedi.</p>
+          <p className="text-gray-500">Message system has not been added yet.</p>
         </div>
       )}
     </div>
