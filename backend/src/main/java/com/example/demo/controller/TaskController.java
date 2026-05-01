@@ -20,6 +20,7 @@ public class TaskController {
         if (task.getStatus() == null || task.getStatus().isEmpty()) {
             task.setStatus("TODO");
         }
+
         return taskRepository.save(task);
     }
 
@@ -31,6 +32,11 @@ public class TaskController {
     @GetMapping("/project/{projectId}")
     public List<Task> getTasksByProjectId(@PathVariable Long projectId) {
         return taskRepository.findByProjectId(projectId);
+    }
+
+    @GetMapping("/assigned/{email}")
+    public List<Task> getTasksByAssignedUser(@PathVariable String email) {
+        return taskRepository.findByAssignedTo(email);
     }
 
     @PutMapping("/{id}/status")

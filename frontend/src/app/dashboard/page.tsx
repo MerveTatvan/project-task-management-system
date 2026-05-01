@@ -7,8 +7,10 @@ import toast from "react-hot-toast";
 type Task = {
   id: number;
   title: string;
-  dueDate?: string | null;
-  team?: string | null;
+  description?: string | null;
+  status?: string | null;
+  assignedTo?: string | null;
+  projectId?: number | null;
 };
 
 type UserProfile = {
@@ -16,37 +18,26 @@ type UserProfile = {
   name: string;
   surname: string;
   email: string;
-  department?: string | null;
-  birthDate?: string | null;
+  role: string;
+  department: string;
+  birthDate: string;
+  extraInfo: string;
 };
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState<Task | null>(null);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   const [activeTab, setActiveTab] = useState<
     "tasks" | "profile" | "messages" | "requests"
   >("tasks");
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-
-  const [form, setForm] = useState({
-    department: "",
-    extraInfo: "",
-  });
-
   const router = useRouter();
 
-  const API = `${process.env.NEXT_PUBLIC_API_URL}/api/tasks`;
-  const AUTH_API = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`;
-
-  const getToken = () => localStorage.getItem("token");
-
   useEffect(() => {
-    const token = getToken();
+    const token = localStorage.getItem("token");
 
     if (!token) {
       router.push("/login");
@@ -59,63 +50,51 @@ export default function Dashboard() {
   }, []);
 
   const fetchTasks = async () => {
-    const token = getToken();
+    const email = localStorage.getItem("email");
+    if (!email) return;
 
-    const res = await fetch(API, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/assigned/${email}`
+    );
 
     const data = await res.json();
     setTasks(Array.isArray(data) ? data : []);
   };
 
   const fetchProfile = async () => {
-    try {
-      const token = getToken();
+    const email = localStorage.getItem("email");
+    if (!email) return;
 
-      const res = await fetch(AUTH_API, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me/${email}`
+    );
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (res.ok && data && data.id) {
-        setProfile({
-          id: data.id,
-          name: data.name || "",
-          surname: data.surname || "",
-          email: data.email || "",
-          department: data.department || "",
-          birthDate: data.birthDate || "",
-        });
-
-        setForm({
-          department: data.department || "",
-          extraInfo: "",
-        });
-      } else {
-        setProfile(null);
-      }
-    } catch (err) {
-      setProfile(null);
+    if (data && data.email) {
+      setProfile(data);
     }
   };
-    const addTask = async () => {
-    if (!newTask.trim()) return;
 
-    const token = getToken();
+  const addTask = async () => {
+    if (!newTask.trim()) {
+      toast.error("Görev başlığı boş olamaz");
+      return;
+    }
 
-    await fetch(API, {
+    const email = localStorage.getItem("email");
+
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ title: newTask }),
+      body: JSON.stringify({
+        title: newTask,
+        description: "",
+        assignedTo: email,
+        status: "TODO",
+      }),
     });
 
     setNewTask("");
@@ -123,86 +102,10 @@ export default function Dashboard() {
     toast.success("Task created 🎉");
   };
 
-  const deleteTask = async (id: number) => {
-    const token = getToken();
-
-    await fetch(`${API}/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    setConfirmDelete(null);
-    fetchTasks();
-    toast.error("Task deleted 🗑️");
-  };
-
-  const updateTask = async () => {
-    if (!editingTask) return;
-
-    const token = getToken();
-
-    await fetch(`${API}/${editingTask.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(editingTask),
-    });
-
-    setEditingTask(null);
-    fetchTasks();
-    toast.success("Task updated ✏️");
-  };
-
-  const updateProfile = async () => {
-    const token = getToken();
-
-    const res = await fetch(AUTH_API, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        department: form.department,
-        extraInfo: form.extraInfo,
-      }),
-    });
-
-    if (res.ok) {
-      toast.success("Profile updated");
-
-      const refreshed = await fetch(AUTH_API, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const updatedUser = await refreshed.json();
-
-      if (refreshed.ok && updatedUser) {
-        setProfile({
-          id: updatedUser.id,
-          name: updatedUser.name || "",
-          surname: updatedUser.surname || "",
-          email: updatedUser.email || "",
-          department: updatedUser.department || "",
-          birthDate: updatedUser.birthDate || "",
-        });
-
-        setForm({
-          department: updatedUser.department || "",
-          extraInfo: "",
-        });
-      }
-    }
-  };
-
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("email");
     router.replace("/login");
   };
 
@@ -215,7 +118,8 @@ export default function Dashboard() {
       </div>
     );
   }
-    return (
+
+  return (
     <div className="min-h-screen bg-gray-50 p-6 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -264,38 +168,32 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-3">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className="p-4 border rounded-xl bg-white flex justify-between items-center"
-              >
-                <div>
+            {tasks.length === 0 ? (
+              <p className="text-gray-500">Henüz task yok 🚀</p>
+            ) : (
+              tasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="p-4 border rounded-xl bg-white"
+                >
                   <p className="font-semibold">{task.title}</p>
-                  {task.dueDate && (
-                    <p className="text-sm text-gray-500">{task.dueDate}</p>
-                  )}
-                  {task.team && (
-                    <p className="text-sm text-blue-500">{task.team}</p>
-                  )}
-                </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setEditingTask(task)}
-                    className="text-blue-600"
-                  >
-                    Edit
-                  </button>
+                  {task.description && (
+                    <p className="text-sm text-gray-500">
+                      {task.description}
+                    </p>
+                  )}
 
-                  <button
-                    onClick={() => setConfirmDelete(task)}
-                    className="text-red-600"
-                  >
-                    Delete
-                  </button>
+                  <p className="text-sm text-blue-500">
+                    Status: {task.status || "TODO"}
+                  </p>
+
+                  <p className="text-sm text-gray-500">
+                    Assigned To: {task.assignedTo}
+                  </p>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </>
       )}
@@ -311,36 +209,15 @@ export default function Dashboard() {
               <input className="border p-2 w-full" value={profile.name} disabled />
               <input className="border p-2 w-full" value={profile.surname} disabled />
               <input className="border p-2 w-full" value={profile.email} disabled />
-              <input className="border p-2 w-full" value={profile.birthDate || ""} disabled />
-
-              <input
-                className="border p-2 w-full"
-                value={form.department}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    department: e.target.value,
-                  }))
-                }
-              />
+              <input className="border p-2 w-full" value={profile.birthDate} disabled />
+              <input className="border p-2 w-full" value={profile.department} disabled />
+              <input className="border p-2 w-full" value={profile.role} disabled />
 
               <textarea
                 className="border p-2 w-full"
-                value={form.extraInfo}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    extraInfo: e.target.value,
-                  }))
-                }
+                value={profile.extraInfo}
+                disabled
               />
-
-              <button
-                onClick={updateProfile}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-              >
-                Save Changes
-              </button>
             </>
           )}
         </div>
@@ -349,12 +226,14 @@ export default function Dashboard() {
       {activeTab === "requests" && (
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-bold mb-4">Requests</h2>
+          <p className="text-gray-500">Henüz request sistemi eklenmedi.</p>
         </div>
       )}
 
       {activeTab === "messages" && (
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-bold mb-4">Messages</h2>
+          <p className="text-gray-500">Henüz mesaj sistemi eklenmedi.</p>
         </div>
       )}
     </div>
