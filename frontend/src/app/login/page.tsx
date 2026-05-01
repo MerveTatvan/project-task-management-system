@@ -64,7 +64,6 @@ export default function LoginPage() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.role);
         localStorage.setItem("email", data.email);
-
         router.push("/dashboard");
       } else {
         setMessage("Login failed");
@@ -161,7 +160,22 @@ export default function LoginPage() {
             <input className="border w-full p-2" placeholder="First Name" value={name} onChange={(e) => setName(e.target.value)} />
             <input className="border w-full p-2" placeholder="Last Name" value={surname} onChange={(e) => setSurname(e.target.value)} />
             <input type="date" className="border w-full p-2" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
-            <input className="border w-full p-2" placeholder="Department" value={department} onChange={(e) => setDepartment(e.target.value)} />
+
+            <select
+              className="border w-full p-2"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+            >
+              <option value="">Select Department / Team</option>
+              <option value="Frontend">Frontend</option>
+              <option value="Backend">Backend</option>
+              <option value="Database">Database</option>
+              <option value="QA">QA</option>
+              <option value="DevOps">DevOps</option>
+              <option value="UI/UX">UI/UX</option>
+              <option value="IT">IT</option>
+              <option value="ARGE">ARGE</option>
+            </select>
           </>
         )}
 

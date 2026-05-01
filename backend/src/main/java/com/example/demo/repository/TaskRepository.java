@@ -9,5 +9,5 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByProjectId(Long projectId);
 
-    List<Task> findByAssignedTo(String assignedTo);
+    List<Task> findByAssignedToContaining(String email);
 }

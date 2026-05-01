@@ -16,6 +16,10 @@ public class Task {
     private String assignedTo;
     private Long projectId;
 
+    private String createdBy;
+    private String assignmentType;
+    private String teamName;
+
     public Long getId() {
         return id;
     }
@@ -58,5 +62,29 @@ public class Task {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getAssignmentType() {
+        return assignmentType;
+    }
+
+    public void setAssignmentType(String assignmentType) {
+        this.assignmentType = assignmentType;
+    }
+
+    public String getTeamName() {
+        return teamName;
+    }
+
+    public void setTeamName(String teamName) {
+        this.teamName = teamName;
     }
 }
