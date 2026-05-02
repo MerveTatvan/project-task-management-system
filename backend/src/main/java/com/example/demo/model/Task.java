@@ -20,6 +20,9 @@ public class Task {
     private String assignmentType;
     private String teamName;
 
+    private String priority;
+    private String dueDate;
+
     public Long getId() {
         return id;
     }
@@ -86,5 +89,21 @@ public class Task {
 
     public void setTeamName(String teamName) {
         this.teamName = teamName;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(String dueDate) {
+        this.dueDate = dueDate;
     }
 }

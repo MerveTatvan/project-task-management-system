@@ -7,7 +7,6 @@ import com.example.demo.repository.CommentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +27,10 @@ public class TaskController {
             task.setStatus("TODO");
         }
 
+        if (task.getPriority() == null || task.getPriority().isEmpty()) {
+            task.setPriority("MEDIUM");
+        }
+
         return taskRepository.save(task);
     }
 
@@ -42,9 +45,9 @@ public class TaskController {
     }
 
     @GetMapping("/assigned/{email}")
-public List<Task> getTasksByAssignedUser(@PathVariable String email) {
-    return taskRepository.findByAssignedToContaining(email);
-}
+    public List<Task> getTasksByAssignedUser(@PathVariable String email) {
+        return taskRepository.findByAssignedToContaining(email);
+    }
 
     @PutMapping("/{id}/status")
     public String updateTaskStatus(@PathVariable Long id, @RequestParam String status) {
@@ -61,16 +64,30 @@ public List<Task> getTasksByAssignedUser(@PathVariable String email) {
         return "Task status updated";
     }
 
-    @Transactional
-@DeleteMapping("/{id}")
-public String deleteTask(@PathVariable Long id) {
-    if (!taskRepository.existsById(id)) {
-        return "Task not found";
+    @PutMapping("/{id}")
+    public Task updateTask(@PathVariable Long id, @RequestBody Task updatedTask) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        task.setTitle(updatedTask.getTitle());
+        task.setDescription(updatedTask.getDescription());
+        task.setStatus(updatedTask.getStatus());
+        task.setPriority(updatedTask.getPriority());
+        task.setDueDate(updatedTask.getDueDate());
+
+        return taskRepository.save(task);
     }
 
-    commentRepository.deleteByTaskId(id);
-    taskRepository.deleteById(id);
+    @Transactional
+    @DeleteMapping("/{id}")
+    public String deleteTask(@PathVariable Long id) {
+        if (!taskRepository.existsById(id)) {
+            return "Task not found";
+        }
 
-    return "Task and related comments deleted";
-}
+        commentRepository.deleteByTaskId(id);
+        taskRepository.deleteById(id);
+
+        return "Task and related comments deleted";
+    }
 }

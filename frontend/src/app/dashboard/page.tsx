@@ -13,6 +13,8 @@ type Task = {
   createdBy?: string | null;
   assignmentType?: string | null;
   teamName?: string | null;
+  priority?: string | null;
+  dueDate?: string | null;
 };
 
 type Comment = {
@@ -22,56 +24,53 @@ type Comment = {
   text: string;
 };
 
-type UserProfile = {
-  id: number;
-  name: string;
-  surname: string;
-  email: string;
-  role: string;
-  department: string;
-  birthDate: string;
-  extraInfo: string;
-};
-
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+
   const [newTask, setNewTask] = useState("");
+  const [newPriority, setNewPriority] = useState("MEDIUM");
+  const [newDueDate, setNewDueDate] = useState("");
+
   const [assignedTo, setAssignedTo] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [assignMode, setAssignMode] = useState<"user" | "team">("user");
+
   const [teamFilter, setTeamFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+
   const [comments, setComments] = useState<{ [key: number]: Comment[] }>({});
   const [newComment, setNewComment] = useState<{ [key: number]: string }>({});
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState("");
+  const [editTaskDescription, setEditTaskDescription] = useState("");
+  const [editTaskStatus, setEditTaskStatus] = useState("TODO");
+  const [editTaskPriority, setEditTaskPriority] = useState("MEDIUM");
+  const [editTaskDueDate, setEditTaskDueDate] = useState("");
+
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    "tasks" | "profile" | "messages" | "requests"
-  >("tasks");
 
   const router = useRouter();
-  const role = typeof window !== "undefined" ? localStorage.getItem("role") : "";
+
+  const role =
+    typeof window !== "undefined" ? localStorage.getItem("role") : "";
+
   const currentEmail =
     typeof window !== "undefined" ? localStorage.getItem("email") : "";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const userRole = localStorage.getItem("role");
 
     if (!token) {
       router.push("/login");
       return;
     }
 
-    if (userRole === "ADMIN" || userRole === "MANAGER") {
-      fetchUsers();
-    }
-
-    Promise.all([fetchTasks(), fetchProfile()]).finally(() =>
+    Promise.all([fetchUsers(), fetchTasks()]).finally(() =>
       setLoading(false)
     );
   }, []);
@@ -89,33 +88,34 @@ export default function Dashboard() {
   };
 
   const fetchTasks = async () => {
-  const userEmail = localStorage.getItem("email");
-  const userRole = localStorage.getItem("role");
+    const userEmail = localStorage.getItem("email");
+    const userRole = localStorage.getItem("role");
 
-  if (!userEmail) return;
+    if (!userEmail) return;
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`);
-  const data = await res.json();
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`);
+    const data = await res.json();
 
-  if (!Array.isArray(data)) {
-    setTasks([]);
-    return;
-  }
+    if (!Array.isArray(data)) {
+      setTasks([]);
+      return;
+    }
 
-  if (userRole === "ADMIN") {
-    setTasks(data);
-    return;
-  }
+    if (userRole === "ADMIN") {
+      setTasks(data);
+      return;
+    }
 
-  const visibleTasks = data.filter((task) => {
-    const assignedToMe = (task.assignedTo || "").includes(userEmail);
-    const createdByMe = task.createdBy === userEmail;
+    const visibleTasks = data.filter((task) => {
+      const assignedToMe = (task.assignedTo || "").includes(userEmail);
+      const createdByMe = task.createdBy === userEmail;
 
-    return assignedToMe || createdByMe;
-  });
+      return assignedToMe || createdByMe;
+    });
 
-  setTasks(visibleTasks);
-};
+    setTasks(visibleTasks);
+  };
+
   const fetchComments = async (taskId: number) => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/comments/task/${taskId}`
@@ -128,8 +128,7 @@ export default function Dashboard() {
       [taskId]: Array.isArray(data) ? data : [],
     }));
   };
-
-  const addComment = async (taskId: number) => {
+    const addComment = async (taskId: number) => {
     const text = newComment[taskId];
 
     if (!text || !text.trim()) {
@@ -207,18 +206,6 @@ export default function Dashboard() {
     toast.success("Comment deleted");
   };
 
-  const fetchProfile = async () => {
-    const userEmail = localStorage.getItem("email");
-    if (!userEmail) return;
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me/${userEmail}`
-    );
-    const data = await res.json();
-
-    if (data && data.email) setProfile(data);
-  };
-
   const defaultTeams = [
     "Frontend",
     "Backend",
@@ -242,9 +229,10 @@ export default function Dashboard() {
     return u.department === selectedTeam;
   });
 
+  const today = new Date().toISOString().split("T")[0];
+
   const filteredTasks = tasks.filter((task) => {
     const assignedUser = users.find((u) => u.email === task.assignedTo);
-
     const taskTeam = task.teamName || assignedUser?.department;
 
     const matchesTeam = !teamFilter || taskTeam === teamFilter;
@@ -257,6 +245,20 @@ export default function Dashboard() {
 
     return matchesTeam && matchesStatus && matchesSearch;
   });
+
+  const totalTasks = filteredTasks.length;
+  const completedTasks = filteredTasks.filter(
+    (task) => task.status === "DONE"
+  ).length;
+  const inProgressTasks = filteredTasks.filter(
+    (task) => task.status === "IN_PROGRESS"
+  ).length;
+  const testingTasks = filteredTasks.filter(
+    (task) => task.status === "TEST"
+  ).length;
+  const overdueTasks = filteredTasks.filter(
+    (task) => task.dueDate && task.dueDate < today && task.status !== "DONE"
+  ).length;
 
   const addTask = async () => {
     const userRole = localStorage.getItem("role");
@@ -305,6 +307,8 @@ export default function Dashboard() {
           createdBy: userEmail,
           assignmentType: "TEAM",
           teamName: selectedTeam,
+          priority: newPriority,
+          dueDate: newDueDate,
         }),
       });
 
@@ -314,14 +318,15 @@ export default function Dashboard() {
       }
 
       setNewTask("");
+      setNewPriority("MEDIUM");
+      setNewDueDate("");
       setAssignedTo("");
       setSelectedTeam("");
       fetchTasks();
       toast.success("Task assigned to team 🎉");
       return;
     }
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -335,6 +340,8 @@ export default function Dashboard() {
         createdBy: userEmail,
         assignmentType: "USER",
         teamName: selectedTeam,
+        priority: newPriority,
+        dueDate: newDueDate,
       }),
     });
 
@@ -344,6 +351,8 @@ export default function Dashboard() {
     }
 
     setNewTask("");
+    setNewPriority("MEDIUM");
+    setNewDueDate("");
     setAssignedTo("");
     setSelectedTeam("");
     fetchTasks();
@@ -367,15 +376,63 @@ export default function Dashboard() {
     toast.success("Status updated");
   };
 
+  const startEditTask = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditTaskTitle(task.title || "");
+    setEditTaskDescription(task.description || "");
+    setEditTaskStatus(task.status || "TODO");
+    setEditTaskPriority(task.priority || "MEDIUM");
+    setEditTaskDueDate(task.dueDate || "");
+  };
+
+  const cancelEditTask = () => {
+    setEditingTaskId(null);
+    setEditTaskTitle("");
+    setEditTaskDescription("");
+    setEditTaskStatus("TODO");
+    setEditTaskPriority("MEDIUM");
+    setEditTaskDueDate("");
+  };
+
+  const updateTaskFull = async (task: Task) => {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${task.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...task,
+          title: editTaskTitle,
+          description: editTaskDescription,
+          status: editTaskStatus,
+          priority: editTaskPriority,
+          dueDate: editTaskDueDate,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      toast.error("Task could not be updated");
+      return;
+    }
+
+    cancelEditTask();
+    fetchTasks();
+    toast.success("Task updated");
+  };
+
   const deleteTask = async (task: Task) => {
     if (role !== "ADMIN" && task.createdBy !== currentEmail) {
       toast.error("Only creator or admin can delete this task");
       return;
     }
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${task.id}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${task.id}`,
+      {
+        method: "DELETE",
+      }
+    );
 
     if (!res.ok) {
       toast.error("Task could not be deleted");
@@ -384,27 +441,6 @@ export default function Dashboard() {
 
     fetchTasks();
     toast.success("Task deleted");
-  };
-
-  const updateAbout = async () => {
-    if (!profile) return;
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/users/update/${profile.email}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      }
-    );
-
-    if (!res.ok) {
-      toast.error("About could not be updated");
-      return;
-    }
-
-    toast.success("About updated");
-    fetchProfile();
   };
 
   const logout = () => {
@@ -421,15 +457,37 @@ export default function Dashboard() {
       </div>
     );
   }
-    return (
-    <div className="min-h-screen bg-gray-50 p-6 max-w-4xl mx-auto">
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6 max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Task Dashboard</h1>
-          <p className="text-sm text-gray-500">Manage everything</p>
+          <p className="text-sm text-gray-500">Manage tasks and teams</p>
         </div>
 
         <div className="flex gap-2">
+          <button
+            onClick={() => router.push("/dashboard/profile")}
+            className="bg-gray-200 px-4 py-2 rounded-lg"
+          >
+            Profile
+          </button>
+
+          <button
+            onClick={() => router.push("/dashboard/messages")}
+            className="bg-gray-200 px-4 py-2 rounded-lg"
+          >
+            Messages
+          </button>
+
+          <button
+            onClick={() => router.push("/dashboard/requests")}
+            className="bg-gray-200 px-4 py-2 rounded-lg"
+          >
+            Requests
+          </button>
+
           {role === "ADMIN" && (
             <button
               onClick={() => router.push("/admin")}
@@ -448,389 +506,437 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        {["tasks", "profile", "messages", "requests"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            className={`px-3 py-1 rounded-lg text-sm ${
-              activeTab === tab ? "bg-black text-white" : "bg-gray-200"
-            }`}
+      {(role === "ADMIN" || role === "MANAGER") && (
+        <div className="bg-white p-4 rounded-xl shadow mb-6 space-y-3">
+          <h2 className="font-bold">Create and Assign Task</h2>
+
+          <input
+            className="border p-2 w-full rounded-lg"
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            placeholder="Task title"
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <select
+              className="border p-2 w-full rounded-lg"
+              value={newPriority}
+              onChange={(e) => setNewPriority(e.target.value)}
+            >
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="URGENT">URGENT</option>
+            </select>
+
+            <input
+              type="date"
+              className="border p-2 w-full rounded-lg"
+              value={newDueDate}
+              onChange={(e) => setNewDueDate(e.target.value)}
+            />
+
+            <select
+              className="border p-2 w-full rounded-lg"
+              value={assignMode}
+              onChange={(e) => {
+                setAssignMode(e.target.value as "user" | "team");
+                setAssignedTo("");
+              }}
+            >
+              <option value="user">Assign to User</option>
+              <option value="team">Assign to Team</option>
+            </select>
+          </div>
+                    <select
+            className="border p-2 w-full rounded-lg"
+            value={selectedTeam}
+            onChange={(e) => {
+              setSelectedTeam(e.target.value);
+              setAssignedTo("");
+            }}
           >
-            {tab}
+            <option value="">Select team</option>
+            {teams.map((team) => (
+              <option key={team} value={team}>
+                {team}
+              </option>
+            ))}
+          </select>
+
+          {assignMode === "user" && (
+            <select
+              className="border p-2 w-full rounded-lg"
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              disabled={!selectedTeam}
+            >
+              <option value="">
+                {selectedTeam ? "Select user" : "Select a team first"}
+              </option>
+
+              {usersBySelectedTeam.map((u) => (
+                <option key={u.id} value={u.email}>
+                  {u.name} {u.surname} - {u.role} - {u.department || "No Team"}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <button
+            onClick={addTask}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+          >
+            {assignMode === "team" ? "Assign Task to Team" : "Add Task"}
           </button>
-        ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+        <div className="bg-white p-4 rounded-xl shadow">
+          <p className="text-sm text-gray-500">Total Tasks</p>
+          <p className="text-2xl font-bold">{totalTasks}</p>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow">
+          <p className="text-sm text-gray-500">Completed</p>
+          <p className="text-2xl font-bold">{completedTasks}</p>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow">
+          <p className="text-sm text-gray-500">In Progress</p>
+          <p className="text-2xl font-bold">{inProgressTasks}</p>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow">
+          <p className="text-sm text-gray-500">Testing</p>
+          <p className="text-2xl font-bold">{testingTasks}</p>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow">
+          <p className="text-sm text-gray-500">Overdue</p>
+          <p className="text-2xl font-bold">{overdueTasks}</p>
+        </div>
       </div>
 
-      {activeTab === "tasks" && (
-        <>
-          {(role === "ADMIN" || role === "MANAGER") && (
-            <div className="bg-white p-4 rounded-xl shadow mb-6 space-y-3">
-              <h2 className="font-bold">Create and Assign Task</h2>
+      {(role === "ADMIN" || role === "MANAGER") && (
+        <div className="bg-white p-4 rounded-xl shadow mb-6 space-y-3">
+          <h2 className="font-bold">Filters</h2>
 
-              <input
-                className="border p-2 w-full rounded-lg"
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                placeholder="Task title"
-              />
+          <input
+            className="border p-2 w-full rounded-lg"
+            placeholder="Search by task title, assigned email or creator..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
 
-              <select
-                className="border p-2 w-full rounded-lg"
-                value={assignMode}
-                onChange={(e) => {
-                  setAssignMode(e.target.value as "user" | "team");
-                  setAssignedTo("");
-                }}
-              >
-                <option value="user">Assign to User</option>
-                <option value="team">Assign to Team</option>
-              </select>
+          <select
+            className="border p-2 w-full rounded-lg"
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+          >
+            <option value="">All Teams</option>
+            {teams.map((team) => (
+              <option key={team} value={team}>
+                {team}
+              </option>
+            ))}
+          </select>
 
-              <select
-                className="border p-2 w-full rounded-lg"
-                value={selectedTeam}
-                onChange={(e) => {
-                  setSelectedTeam(e.target.value);
-                  setAssignedTo("");
-                }}
-              >
-                <option value="">Select team</option>
-                {teams.map((team) => (
-                  <option key={team} value={team}>
-                    {team}
-                  </option>
-                ))}
-              </select>
+          <select
+            className="border p-2 w-full rounded-lg"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="TODO">TODO</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="TEST">TEST</option>
+            <option value="DONE">DONE</option>
+          </select>
+        </div>
+      )}
 
-              {assignMode === "user" && (
-                <select
-                  className="border p-2 w-full rounded-lg"
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                  disabled={!selectedTeam}
-                >
-                  <option value="">
-                    {selectedTeam ? "Select user" : "Select a team first"}
-                  </option>
+      <div className="space-y-3">
+        {filteredTasks.length === 0 ? (
+          <p className="text-gray-500">No tasks yet 🚀</p>
+        ) : (
+          filteredTasks.map((task) => {
+            const assignedUser = users.find((u) => u.email === task.assignedTo);
 
-                  {usersBySelectedTeam.map((u) => (
-                    <option key={u.id} value={u.email}>
-                      {u.name} {u.surname} - {u.role} -{" "}
-                      {u.department || "No Team"}
-                    </option>
-                  ))}
-                </select>
-              )}
+            const isAssignedToMe = (task.assignedTo || "").includes(
+              currentEmail || ""
+            );
 
-              <button
-                onClick={addTask}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-              >
-                {assignMode === "team" ? "Assign Task to Team" : "Add Task"}
-              </button>
-            </div>
-          )}
+            const canDeleteTask =
+              role === "ADMIN" || task.createdBy === currentEmail;
 
-          {(role === "ADMIN" || role === "MANAGER") && (
-            <div className="bg-white p-4 rounded-xl shadow mb-6 space-y-3">
-              <h2 className="font-bold">Filters</h2>
+            const canEditTask =
+              role === "ADMIN" || task.createdBy === currentEmail;
 
-              <input
-                className="border p-2 w-full rounded-lg"
-                placeholder="Search by task title, assigned email or creator..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-
-              <select
-                className="border p-2 w-full rounded-lg"
-                value={teamFilter}
-                onChange={(e) => setTeamFilter(e.target.value)}
-              >
-                <option value="">All Teams</option>
-                {teams.map((team) => (
-                  <option key={team} value={team}>
-                    {team}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="border p-2 w-full rounded-lg"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="TODO">TODO</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="DONE">DONE</option>
-              </select>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            {filteredTasks.length === 0 ? (
-              <p className="text-gray-500">No tasks yet 🚀</p>
-            ) : (
-              filteredTasks.map((task) => {
-                const assignedUser = users.find(
-                  (u) => u.email === task.assignedTo
-                );
-
-                const isAssignedToMe = (task.assignedTo || "").includes(
-                  currentEmail || ""
-                );
-
-                const canDeleteTask =
-                  role === "ADMIN" || task.createdBy === currentEmail;
-
-                return (
-                  <div key={task.id} className="p-4 border rounded-xl bg-white">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-semibold">{task.title}</p>
-                        <p className="text-sm text-gray-500">
-                          Assigned To: {task.assignedTo}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Created By: {task.createdBy || "-"}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Assignment Type: {task.assignmentType || "-"}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Team:{" "}
-                          {task.teamName || assignedUser?.department || "-"}
-                        </p>
-                        <p className="text-sm text-blue-500">
-                          Status: {task.status || "TODO"}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-2 items-center">
-                        {isAssignedToMe && (
-                          <select
-                            value={task.status || "TODO"}
-                            onChange={(e) =>
-                              updateStatus(task.id, e.target.value)
-                            }
-                            className="border p-2 rounded"
-                          >
-                            <option value="TODO">TODO</option>
-                            <option value="IN_PROGRESS">IN_PROGRESS</option>
-                            <option value="DONE">DONE</option>
-                          </select>
-                        )}
-
-                        {canDeleteTask && (
-                          <button
-                            onClick={() => deleteTask(task)}
-                            className="bg-red-500 text-white px-3 py-1 rounded"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 border-t pt-3">
-                      <p className="text-xs font-semibold mb-2">Comments</p>
-
-                      {(comments[task.id] || []).length === 0 ? (
-                        <p className="text-xs text-gray-400 mb-2">
-                          No comments yet.
-                        </p>
-                      ) : (
-                        <div className="space-y-2 mb-2">
-                          {(comments[task.id] || []).map((comment) => {
-                            const isCommentOwner =
-                              comment.authorEmail === currentEmail;
-                            const canDeleteComment =
-                              role === "ADMIN" || isCommentOwner;
-                            const canEditComment = isCommentOwner;
-
-                            return (
-                              <div
-                                key={comment.id}
-                                className="text-xs text-gray-600 flex justify-between gap-2 border-b pb-1"
-                              >
-                                <div className="flex-1">
-                                  <span className="font-semibold">
-                                    {comment.authorEmail}:
-                                  </span>{" "}
-                                  {editingCommentId === comment.id ? (
-                                    <input
-                                      className="border p-1 ml-1 rounded w-full mt-1"
-                                      value={editingCommentText}
-                                      onChange={(e) =>
-                                        setEditingCommentText(e.target.value)
-                                      }
-                                    />
-                                  ) : (
-                                    comment.text
-                                  )}
-                                </div>
-
-                                <div className="flex gap-1">
-                                  {canEditComment &&
-                                    editingCommentId !== comment.id && (
-                                      <button
-                                        onClick={() => {
-                                          setEditingCommentId(comment.id);
-                                          setEditingCommentText(comment.text);
-                                        }}
-                                        className="text-blue-500"
-                                      >
-                                        Edit
-                                      </button>
-                                    )}
-
-                                  {canEditComment &&
-                                    editingCommentId === comment.id && (
-                                      <button
-                                        onClick={() => updateComment(comment)}
-                                        className="text-green-600"
-                                      >
-                                        Save
-                                      </button>
-                                    )}
-
-                                  {canEditComment &&
-                                    editingCommentId === comment.id && (
-                                      <button
-                                        onClick={() => {
-                                          setEditingCommentId(null);
-                                          setEditingCommentText("");
-                                        }}
-                                        className="text-gray-500"
-                                      >
-                                        Cancel
-                                      </button>
-                                    )}
-
-                                  {canDeleteComment && (
-                                    <button
-                                      onClick={() => deleteComment(comment)}
-                                      className="text-red-500"
-                                    >
-                                      Delete
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
+            return (
+              <div key={task.id} className="p-4 border rounded-xl bg-white">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    {editingTaskId === task.id ? (
+                      <div className="space-y-2">
                         <input
-                          className="border p-2 text-xs flex-1 rounded"
-                          placeholder="Add comment..."
-                          value={newComment[task.id] || ""}
+                          className="border p-2 w-full rounded"
+                          value={editTaskTitle}
+                          onChange={(e) => setEditTaskTitle(e.target.value)}
+                        />
+
+                        <textarea
+                          className="border p-2 w-full rounded"
+                          placeholder="Description"
+                          value={editTaskDescription}
                           onChange={(e) =>
-                            setNewComment((prev) => ({
-                              ...prev,
-                              [task.id]: e.target.value,
-                            }))
+                            setEditTaskDescription(e.target.value)
                           }
                         />
 
-                        <button
-                          onClick={() => addComment(task.id)}
-                          className="bg-blue-500 text-white px-3 py-1 text-xs rounded"
-                        >
-                          Add
-                        </button>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <select
+                            className="border p-2 rounded"
+                            value={editTaskStatus}
+                            onChange={(e) => setEditTaskStatus(e.target.value)}
+                          >
+                            <option value="TODO">TODO</option>
+                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option value="TEST">TEST</option>
+                            <option value="DONE">DONE</option>
+                          </select>
+
+                          <select
+                            className="border p-2 rounded"
+                            value={editTaskPriority}
+                            onChange={(e) =>
+                              setEditTaskPriority(e.target.value)
+                            }
+                          >
+                            <option value="LOW">LOW</option>
+                            <option value="MEDIUM">MEDIUM</option>
+                            <option value="HIGH">HIGH</option>
+                            <option value="URGENT">URGENT</option>
+                          </select>
+
+                          <input
+                            type="date"
+                            className="border p-2 rounded"
+                            value={editTaskDueDate}
+                            onChange={(e) =>
+                              setEditTaskDueDate(e.target.value)
+                            }
+                          />
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => updateTaskFull(task)}
+                            className="bg-green-600 text-white px-3 py-1 rounded"
+                          >
+                            Save
+                          </button>
+
+                          <button
+                            onClick={cancelEditTask}
+                            className="bg-gray-400 text-white px-3 py-1 rounded"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <p className="font-semibold">{task.title}</p>
+
+                        {task.description && (
+                          <p className="text-sm text-gray-500">
+                            {task.description}
+                          </p>
+                        )}
+
+                        <p className="text-sm text-gray-500">
+                          Assigned To: {task.assignedTo}
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          Created By: {task.createdBy || "-"}
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          Assignment Type: {task.assignmentType || "-"}
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          Team: {task.teamName || assignedUser?.department || "-"}
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          Priority: {task.priority || "MEDIUM"}
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          Due Date: {task.dueDate || "-"}
+                        </p>
+
+                        <p className="text-sm text-blue-500">
+                          Status: {task.status || "TODO"}
+                        </p>
+                      </>
+                    )}
                   </div>
-                );
-              })
-            )}
-          </div>
-        </>
-      )}
 
-      {activeTab === "profile" && (
-        <div className="bg-white p-6 rounded-xl shadow space-y-3">
-          <h2 className="text-xl font-bold mb-2">Profile</h2>
+                  <div className="flex gap-2 items-center">
+                    {isAssignedToMe && editingTaskId !== task.id && (
+                      <select
+                        value={task.status || "TODO"}
+                        onChange={(e) => updateStatus(task.id, e.target.value)}
+                        className="border p-2 rounded"
+                      >
+                        <option value="TODO">TODO</option>
+                        <option value="IN_PROGRESS">IN_PROGRESS</option>
+                        <option value="TEST">TEST</option>
+                        <option value="DONE">DONE</option>
+                      </select>
+                    )}
 
-          {!profile ? (
-            <p>Profile loading failed or empty</p>
-          ) : (
-            <>
-              <input
-                className="border p-2 w-full"
-                value={profile.name || ""}
-                disabled
-              />
-              <input
-                className="border p-2 w-full"
-                value={profile.surname || ""}
-                disabled
-              />
-              <input
-                className="border p-2 w-full"
-                value={profile.email || ""}
-                disabled
-              />
-              <input
-                className="border p-2 w-full"
-                value={profile.birthDate || ""}
-                disabled
-              />
-              <input
-                className="border p-2 w-full"
-                value={profile.department || ""}
-                disabled
-              />
-              <input
-                className="border p-2 w-full"
-                value={profile.role || ""}
-                disabled
-              />
+                    {canEditTask && editingTaskId !== task.id && (
+                      <button
+                        onClick={() => startEditTask(task)}
+                        className="bg-yellow-500 text-white px-3 py-1 rounded"
+                      >
+                        Edit
+                      </button>
+                    )}
 
-              <div className="flex gap-2 items-start">
-                <textarea
-                  className="border p-2 w-full text-sm"
-                  placeholder="About..."
-                  value={profile.extraInfo || ""}
-                  onChange={(e) =>
-                    setProfile({ ...profile, extraInfo: e.target.value })
-                  }
-                />
+                    {canDeleteTask && editingTaskId !== task.id && (
+                      <button
+                        onClick={() => deleteTask(task)}
+                        className="bg-red-500 text-white px-3 py-1 rounded"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+                                <div className="mt-3 border-t pt-3">
+                  <p className="text-xs font-semibold mb-2">Comments</p>
 
-                <button
-                  onClick={updateAbout}
-                  className="bg-blue-500 text-white px-3 py-2 rounded"
-                >
-                  Save
-                </button>
+                  {(comments[task.id] || []).length === 0 ? (
+                    <p className="text-xs text-gray-400 mb-2">
+                      No comments yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-2 mb-2">
+                      {(comments[task.id] || []).map((comment) => {
+                        const isCommentOwner =
+                          comment.authorEmail === currentEmail;
+                        const canDeleteComment =
+                          role === "ADMIN" || isCommentOwner;
+                        const canEditComment = isCommentOwner;
+
+                        return (
+                          <div
+                            key={comment.id}
+                            className="text-xs text-gray-600 flex justify-between gap-2 border-b pb-1"
+                          >
+                            <div className="flex-1">
+                              <span className="font-semibold">
+                                {comment.authorEmail}:
+                              </span>{" "}
+                              {editingCommentId === comment.id ? (
+                                <input
+                                  className="border p-1 ml-1 rounded w-full mt-1"
+                                  value={editingCommentText}
+                                  onChange={(e) =>
+                                    setEditingCommentText(e.target.value)
+                                  }
+                                />
+                              ) : (
+                                comment.text
+                              )}
+                            </div>
+
+                            <div className="flex gap-1">
+                              {canEditComment &&
+                                editingCommentId !== comment.id && (
+                                  <button
+                                    onClick={() => {
+                                      setEditingCommentId(comment.id);
+                                      setEditingCommentText(comment.text);
+                                    }}
+                                    className="text-blue-500"
+                                  >
+                                    Edit
+                                  </button>
+                                )}
+
+                              {canEditComment &&
+                                editingCommentId === comment.id && (
+                                  <button
+                                    onClick={() => updateComment(comment)}
+                                    className="text-green-600"
+                                  >
+                                    Save
+                                  </button>
+                                )}
+
+                              {canEditComment &&
+                                editingCommentId === comment.id && (
+                                  <button
+                                    onClick={() => {
+                                      setEditingCommentId(null);
+                                      setEditingCommentText("");
+                                    }}
+                                    className="text-gray-500"
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+
+                              {canDeleteComment && (
+                                <button
+                                  onClick={() => deleteComment(comment)}
+                                  className="text-red-500"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <input
+                      className="border p-2 text-xs flex-1 rounded"
+                      placeholder="Add comment..."
+                      value={newComment[task.id] || ""}
+                      onChange={(e) =>
+                        setNewComment((prev) => ({
+                          ...prev,
+                          [task.id]: e.target.value,
+                        }))
+                      }
+                    />
+
+                    <button
+                      onClick={() => addComment(task.id)}
+                      className="bg-blue-500 text-white px-3 py-1 text-xs rounded"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
               </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {activeTab === "requests" && (
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="text-xl font-bold mb-4">Requests</h2>
-          <p className="text-gray-500">
-            Request system has not been added yet.
-          </p>
-        </div>
-      )}
-
-      {activeTab === "messages" && (
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="text-xl font-bold mb-4">Messages</h2>
-          <p className="text-gray-500">
-            Message system has not been added yet.
-          </p>
-        </div>
-      )}
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
+
