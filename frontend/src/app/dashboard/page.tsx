@@ -128,7 +128,8 @@ export default function Dashboard() {
       [taskId]: Array.isArray(data) ? data : [],
     }));
   };
-    const addComment = async (taskId: number) => {
+
+  const addComment = async (taskId: number) => {
     const text = newComment[taskId];
 
     if (!text || !text.trim()) {
@@ -259,8 +260,7 @@ export default function Dashboard() {
   const overdueTasks = filteredTasks.filter(
     (task) => task.dueDate && task.dueDate < today && task.status !== "DONE"
   ).length;
-
-  const addTask = async () => {
+    const addTask = async () => {
     const userRole = localStorage.getItem("role");
     const userEmail = localStorage.getItem("email");
 
@@ -326,7 +326,8 @@ export default function Dashboard() {
       toast.success("Task assigned to team 🎉");
       return;
     }
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`, {
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -448,6 +449,16 @@ export default function Dashboard() {
     router.replace("/login");
   };
 
+  const goToProfile = (email?: string | null) => {
+    if (!email) return;
+
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail || cleanEmail === "-") return;
+
+    router.push(`/dashboard/profile/${encodeURIComponent(cleanEmail)}`);
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -548,7 +559,8 @@ export default function Dashboard() {
               <option value="team">Assign to Team</option>
             </select>
           </div>
-                    <select
+
+          <select
             className="border p-2 w-full rounded-lg"
             value={selectedTeam}
             onChange={(e) => {
@@ -591,8 +603,7 @@ export default function Dashboard() {
           </button>
         </div>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
         <div className="bg-white p-4 rounded-xl shadow">
           <p className="text-sm text-gray-500">Total Tasks</p>
           <p className="text-2xl font-bold">{totalTasks}</p>
@@ -757,11 +768,38 @@ export default function Dashboard() {
                         )}
 
                         <p className="text-sm text-gray-500">
-                          Assigned To: {task.assignedTo}
+                          Assigned To:{" "}
+                          {(task.assignedTo || "-").split(",").map((email) => {
+                            const cleanEmail = email.trim();
+
+                            if (!cleanEmail || cleanEmail === "-") {
+                              return <span key="empty-assigned">-</span>;
+                            }
+
+                            return (
+                              <button
+                                key={cleanEmail}
+                                onClick={() => goToProfile(cleanEmail)}
+                                className="text-blue-600 underline mr-2"
+                              >
+                                {cleanEmail}
+                              </button>
+                            );
+                          })}
                         </p>
 
                         <p className="text-sm text-gray-500">
-                          Created By: {task.createdBy || "-"}
+                          Created By:{" "}
+                          {task.createdBy ? (
+                            <button
+                              onClick={() => goToProfile(task.createdBy)}
+                              className="text-blue-600 underline"
+                            >
+                              {task.createdBy}
+                            </button>
+                          ) : (
+                            "-"
+                          )}
                         </p>
 
                         <p className="text-sm text-gray-500">
@@ -820,7 +858,8 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-                                <div className="mt-3 border-t pt-3">
+
+                <div className="mt-3 border-t pt-3">
                   <p className="text-xs font-semibold mb-2">Comments</p>
 
                   {(comments[task.id] || []).length === 0 ? (
@@ -842,9 +881,12 @@ export default function Dashboard() {
                             className="text-xs text-gray-600 flex justify-between gap-2 border-b pb-1"
                           >
                             <div className="flex-1">
-                              <span className="font-semibold">
+                              <button
+                                onClick={() => goToProfile(comment.authorEmail)}
+                                className="font-semibold text-blue-600 underline"
+                              >
                                 {comment.authorEmail}:
-                              </span>{" "}
+                              </button>{" "}
                               {editingCommentId === comment.id ? (
                                 <input
                                   className="border p-1 ml-1 rounded w-full mt-1"
@@ -939,4 +981,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
