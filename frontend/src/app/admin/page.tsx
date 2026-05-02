@@ -54,6 +54,30 @@ export default function AdminPage() {
     alert("Role updated");
   };
 
+  // 🔥 YENİ: USER DELETE
+  const deleteUser = async (userId: number) => {
+    const confirmDelete = confirm(
+      "Bu kullanıcıyı silmek istediğine emin misin?"
+    );
+
+    if (!confirmDelete) return;
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (!res.ok) {
+      alert("Silme işlemi başarısız");
+      return;
+    }
+
+    alert("Kullanıcı silindi");
+    fetchUsers();
+  };
+
   const filteredUsers = users.filter((user) => {
     const fullText = `${user.name} ${user.surname} ${user.email} ${user.department}`
       .toLowerCase();
@@ -121,16 +145,26 @@ export default function AdminPage() {
               </p>
             </div>
 
-            <select
-              value={user.role}
-              onChange={(e) => updateRole(user.id, e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option value="ADMIN">ADMIN</option>
-              <option value="MANAGER">MANAGER</option>
-              <option value="WORKER">WORKER</option>
-              <option value="DEVELOPER">DEVELOPER</option>
-            </select>
+            <div className="flex gap-2 items-center">
+              <select
+                value={user.role}
+                onChange={(e) => updateRole(user.id, e.target.value)}
+                className="border p-2 rounded"
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="MANAGER">MANAGER</option>
+                <option value="WORKER">WORKER</option>
+                <option value="DEVELOPER">DEVELOPER</option>
+              </select>
+
+              {/* 🔥 DELETE BUTTON */}
+              <button
+                onClick={() => deleteUser(user.id)}
+                className="bg-red-500 text-white px-3 py-1 rounded"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
 

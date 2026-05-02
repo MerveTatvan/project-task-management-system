@@ -52,4 +52,17 @@ public class UserController {
 
         return userRepository.save(user);
     }
+
+    // 🔥 YENİ EKLENEN KISIM (SİLME)
+    @DeleteMapping("/{id}")
+    public String deleteUser(@PathVariable Long id) {
+
+        if (!userRepository.existsById(id)) {
+            return "User not found";
+        }
+
+        userRepository.deleteById(id);
+
+        return "User deleted";
+    }
 }
