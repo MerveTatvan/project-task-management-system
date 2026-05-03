@@ -11,9 +11,13 @@ public class Request {
     private Long id;
 
     private String type;
+
+    @Column(length = 2000)
     private String description;
+
     private String status;
     private String createdBy;
+    private String receiverEmail;
 
     public Long getId() { return id; }
 
@@ -28,4 +32,7 @@ public class Request {
 
     public String getCreatedBy() { return createdBy; }
     public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+
+    public String getReceiverEmail() { return receiverEmail; }
+    public void setReceiverEmail(String receiverEmail) { this.receiverEmail = receiverEmail; }
 }

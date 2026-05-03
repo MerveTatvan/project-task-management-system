@@ -19,6 +19,13 @@ public class User {
     private String birthDate;
     private String extraInfo;
 
+    private String linkedin;
+    private String github;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String profileImage;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -45,4 +52,13 @@ public class User {
 
     public String getExtraInfo() { return extraInfo; }
     public void setExtraInfo(String extraInfo) { this.extraInfo = extraInfo; }
+
+    public String getLinkedin() { return linkedin; }
+    public void setLinkedin(String linkedin) { this.linkedin = linkedin; }
+
+    public String getGithub() { return github; }
+    public void setGithub(String github) { this.github = github; }
+
+    public String getProfileImage() { return profileImage; }
+    public void setProfileImage(String profileImage) { this.profileImage = profileImage; }
 }

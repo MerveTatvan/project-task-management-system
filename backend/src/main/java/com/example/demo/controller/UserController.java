@@ -1,10 +1,14 @@
 package com.example.demo.controller;
 
+import com.example.demo.model.Notification;
 import com.example.demo.model.User;
+import com.example.demo.repository.NotificationRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -15,9 +19,30 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private EmailService emailService;
+
     @GetMapping
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        List<User> users = userRepository.findAll();
+
+        for (User user : users) {
+            user.setPassword(null);
+        }
+
+        return users;
+    }
+
+    @GetMapping("/{email}")
+    public User getUserByEmail(@PathVariable String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setPassword(null);
+        return user;
     }
 
     @PutMapping("/{id}/role")
@@ -36,8 +61,27 @@ public class UserController {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setRole(role.replace("\"", ""));
+        String newRole = role.replace("\"", "");
+        user.setRole(newRole);
         userRepository.save(user);
+
+        Notification notification = new Notification();
+        notification.setReceiverEmail(user.getEmail());
+        notification.setTitle("Role Updated");
+        notification.setMessage("Your role has been updated to: " + newRole);
+        notification.setType("ROLE");
+        notification.setTaskId(null);
+        notification.setReadStatus(false);
+        notification.setCreatedAt(LocalDateTime.now().toString());
+
+        notificationRepository.save(notification);
+
+        emailService.sendEmail(
+                user.getEmail(),
+                "Role Updated",
+                "Hello,\n\nYour role has been updated to: " + newRole +
+                        "\n\nPlease log in to see your updated permissions."
+        );
 
         return "Role updated";
     }
@@ -49,11 +93,16 @@ public class UserController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setExtraInfo(updatedUser.getExtraInfo());
+        user.setLinkedin(updatedUser.getLinkedin());
+        user.setGithub(updatedUser.getGithub());
+        user.setProfileImage(updatedUser.getProfileImage());
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        savedUser.setPassword(null);
+
+        return savedUser;
     }
 
-    // 🔥 YENİ EKLENEN KISIM (SİLME)
     @DeleteMapping("/{id}")
     public String deleteUser(@PathVariable Long id) {
 

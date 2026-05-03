@@ -23,6 +23,12 @@ public class Task {
     private String priority;
     private String dueDate;
 
+    private String reviewNote;
+    private String completedBy;
+    private String approvalRequestedAt;
+    private String approvedBy;
+    private String approvedAt;
+
     public Long getId() {
         return id;
     }
@@ -105,5 +111,45 @@ public class Task {
 
     public void setDueDate(String dueDate) {
         this.dueDate = dueDate;
+    }
+
+    public String getReviewNote() {
+        return reviewNote;
+    }
+
+    public void setReviewNote(String reviewNote) {
+        this.reviewNote = reviewNote;
+    }
+
+    public String getCompletedBy() {
+        return completedBy;
+    }
+
+    public void setCompletedBy(String completedBy) {
+        this.completedBy = completedBy;
+    }
+
+    public String getApprovalRequestedAt() {
+        return approvalRequestedAt;
+    }
+
+    public void setApprovalRequestedAt(String approvalRequestedAt) {
+        this.approvalRequestedAt = approvalRequestedAt;
+    }
+
+    public String getApprovedBy() {
+        return approvedBy;
+    }
+
+    public void setApprovedBy(String approvedBy) {
+        this.approvedBy = approvedBy;
+    }
+
+    public String getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(String approvedAt) {
+        this.approvedAt = approvedAt;
     }
 }

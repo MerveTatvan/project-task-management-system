@@ -7,6 +7,7 @@ import com.example.demo.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,6 +37,18 @@ public class AuthController {
 
         if (user.getExtraInfo() == null) {
             user.setExtraInfo("");
+        }
+
+        if (user.getLinkedin() == null) {
+            user.setLinkedin("");
+        }
+
+        if (user.getGithub() == null) {
+            user.setGithub("");
+        }
+
+        if (user.getProfileImage() == null) {
+            user.setProfileImage("");
         }
 
         userRepository.save(user);
@@ -78,15 +91,20 @@ public class AuthController {
 
         User user = foundUser.get();
 
-        return Map.of(
-                "id", user.getId(),
-                "name", user.getName() == null ? "" : user.getName(),
-                "surname", user.getSurname() == null ? "" : user.getSurname(),
-                "email", user.getEmail(),
-                "role", user.getRole() == null ? "" : user.getRole(),
-                "department", user.getDepartment() == null ? "" : user.getDepartment(),
-                "birthDate", user.getBirthDate() == null ? "" : user.getBirthDate(),
-                "extraInfo", user.getExtraInfo() == null ? "" : user.getExtraInfo()
-        );
+        Map<String, Object> profile = new HashMap<>();
+
+        profile.put("id", user.getId());
+        profile.put("name", user.getName() == null ? "" : user.getName());
+        profile.put("surname", user.getSurname() == null ? "" : user.getSurname());
+        profile.put("email", user.getEmail());
+        profile.put("role", user.getRole() == null ? "" : user.getRole());
+        profile.put("department", user.getDepartment() == null ? "" : user.getDepartment());
+        profile.put("birthDate", user.getBirthDate() == null ? "" : user.getBirthDate());
+        profile.put("extraInfo", user.getExtraInfo() == null ? "" : user.getExtraInfo());
+        profile.put("linkedin", user.getLinkedin() == null ? "" : user.getLinkedin());
+        profile.put("github", user.getGithub() == null ? "" : user.getGithub());
+        profile.put("profileImage", user.getProfileImage() == null ? "" : user.getProfileImage());
+
+        return profile;
     }
 }
