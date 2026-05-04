@@ -70,14 +70,14 @@ public class RequestController {
         User requester = userRepository.findByEmail(request.getCreatedBy())
                 .orElseThrow(() -> new RuntimeException("Requester not found"));
 
-        String department = requester.getDepartment();
-
         if (request.getReceiverEmail() == null || request.getReceiverEmail().trim().isEmpty()) {
-            User manager = userRepository
-                    .findFirstByRoleAndDepartment("MANAGER", department)
-                    .orElseThrow(() -> new RuntimeException("No manager found for department"));
+            String receiverEmail = findReceiverEmailForRequest(request, requester);
 
-            request.setReceiverEmail(manager.getEmail());
+            if (receiverEmail == null || receiverEmail.trim().isEmpty()) {
+                throw new RuntimeException("No suitable receiver found for this request");
+            }
+
+            request.setReceiverEmail(receiverEmail);
         }
 
         Request savedRequest = requestRepository.save(request);
@@ -226,6 +226,122 @@ public class RequestController {
 
         requestRepository.delete(req);
         return "Request deleted";
+    }
+
+    private String findReceiverEmailForRequest(Request request, User requester) {
+        String type = request.getType() == null ? "GENERAL" : request.getType();
+
+        if ("ROLE_CHANGE".equals(type) || "BUG_REPORT".equals(type) || "GENERAL".equals(type)) {
+            User admin = findAnyAdmin();
+            return admin == null ? null : admin.getEmail();
+        }
+
+        if ("TEAM_CHANGE".equals(type)) {
+            User manager = findManagerByDepartment(requester.getDepartment());
+            if (manager != null) return manager.getEmail();
+
+            User admin = findAnyAdmin();
+            return admin == null ? null : admin.getEmail();
+        }
+
+        if ("TASK_HELP".equals(type) || "DEADLINE_EXTENSION".equals(type) || "KANBAN_APPROVAL".equals(type)) {
+            Task task = findTaskFromRequestSafely(request);
+
+            if (task != null && task.getCreatedBy() != null && !task.getCreatedBy().trim().isEmpty()) {
+                return task.getCreatedBy().trim();
+            }
+
+            User manager = findManagerByDepartment(requester.getDepartment());
+            if (manager != null) return manager.getEmail();
+
+            User admin = findAnyAdmin();
+            return admin == null ? null : admin.getEmail();
+        }
+
+        if (type.startsWith("PROJECT")) {
+            Project project = findProjectFromRequestSafely(request);
+
+            if (project != null && project.getCreatedBy() != null && !project.getCreatedBy().trim().isEmpty()) {
+                return project.getCreatedBy().trim();
+            }
+
+            User manager = findManagerByDepartment(requester.getDepartment());
+            if (manager != null) return manager.getEmail();
+
+            User admin = findAnyAdmin();
+            return admin == null ? null : admin.getEmail();
+        }
+
+        User admin = findAnyAdmin();
+        return admin == null ? null : admin.getEmail();
+    }
+
+    private User findManagerByDepartment(String department) {
+        if (department == null || department.trim().isEmpty()) {
+            return null;
+        }
+
+        return userRepository
+                .findFirstByRoleAndDepartment("MANAGER", department)
+                .orElse(null);
+    }
+
+    private User findAnyAdmin() {
+        return userRepository
+                .findAll()
+                .stream()
+                .filter(user -> "ADMIN".equals(user.getRole()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Task findTaskFromRequestSafely(Request request) {
+        Long taskId = request.getTaskId();
+
+        if (taskId == null) {
+            taskId = extractLongValueFromDescription(request.getDescription(), "Task Info:");
+        }
+
+        if (taskId == null) {
+            taskId = extractLongValueFromDescription(request.getDescription(), "Task:");
+        }
+
+        if (taskId == null) {
+            return null;
+        }
+
+        return taskRepository.findById(taskId).orElse(null);
+    }
+
+    private Project findProjectFromRequestSafely(Request request) {
+        Long projectId = request.getProjectId();
+
+        if (projectId == null) {
+            projectId = extractLongValueFromDescription(request.getDescription(), "Project:");
+        }
+
+        if (projectId == null) {
+            return null;
+        }
+
+        return projectRepository.findById(projectId).orElse(null);
+    }
+
+    private Long extractLongValueFromDescription(String description, String label) {
+        if (description == null || label == null || !description.contains(label)) {
+            return null;
+        }
+
+        try {
+            String rawValue = description
+                    .split(label)[1]
+                    .split("\n")[0]
+                    .trim();
+
+            return Long.parseLong(rawValue);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private boolean shouldSendRequestEmail(String type) {

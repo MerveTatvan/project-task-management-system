@@ -1,3 +1,4 @@
+// Target file: frontend/src/app/dashboard/profile/[email]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -101,7 +102,7 @@ export default function OtherUserProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100">
         <p className="font-bold text-slate-600 animate-pulse">
           Loading profile...
         </p>
@@ -116,11 +117,11 @@ export default function OtherUserProfilePage() {
   const mailLink = `mailto:${profile.email}?subject=Hello from Task Dashboard&body=Hi ${profile.name},`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-xl border border-slate-100 p-6">
+        <div className="bg-white/75 backdrop-blur rounded-3xl shadow-2xl shadow-blue-500/15 border border-slate-100 p-6">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl font-black overflow-hidden border-4 border-white shadow-md">
+            <div className="w-24 h-24 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl font-black overflow-hidden border-4 border-white shadow-xl shadow-blue-500/10 shadow-blue-500/10">
               {profile.profileImage ? (
                 <img
                   src={profile.profileImage}
@@ -170,7 +171,7 @@ export default function OtherUserProfilePage() {
                   <a
                     href={profile.github}
                     target="_blank"
-                    className="bg-slate-50 hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-2xl text-sm font-bold border border-slate-200"
+                    className="bg-white/70 hover:bg-white/60 text-slate-700 px-4 py-2 rounded-2xl text-sm font-bold border border-slate-200"
                   >
                     GitHub
                   </a>
@@ -181,28 +182,28 @@ export default function OtherUserProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-3xl shadow-md border-l-8 border-indigo-300">
+          <div className="bg-white/75 backdrop-blur-xl p-5 rounded-3xl shadow-xl shadow-blue-500/10 shadow-blue-500/10 border-l-8 border-indigo-300">
             <p className="text-sm text-slate-500">Total Tasks</p>
             <p className="text-3xl font-black text-indigo-600">
               {stats.totalTasks}
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl shadow-md border-l-8 border-emerald-300">
+          <div className="bg-white/75 backdrop-blur-xl p-5 rounded-3xl shadow-xl shadow-blue-500/10 shadow-blue-500/10 border-l-8 border-emerald-300">
             <p className="text-sm text-slate-500">Completed</p>
             <p className="text-3xl font-black text-emerald-600">
               {stats.completedTasks}
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl shadow-md border-l-8 border-amber-300">
+          <div className="bg-white/75 backdrop-blur-xl p-5 rounded-3xl shadow-xl shadow-blue-500/10 shadow-blue-500/10 border-l-8 border-amber-300">
             <p className="text-sm text-slate-500">Pending</p>
             <p className="text-3xl font-black text-amber-600">
               {stats.pendingTasks}
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl shadow-md border-l-8 border-blue-300">
+          <div className="bg-white/75 backdrop-blur-xl p-5 rounded-3xl shadow-xl shadow-blue-500/10 shadow-blue-500/10 border-l-8 border-blue-300">
             <p className="text-sm text-slate-500">Success Rate</p>
             <p className="text-3xl font-black text-blue-600">
               {stats.successRate}%
@@ -210,7 +211,7 @@ export default function OtherUserProfilePage() {
           </div>
         </div>
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-lg border border-slate-100 p-6">
+        <div className="bg-white/75 backdrop-blur rounded-3xl shadow-xl shadow-blue-500/10 border border-slate-100 p-6">
           <h2 className="font-black text-xl text-slate-900 mb-4">
             Profile Information
           </h2>
@@ -247,10 +248,10 @@ export default function OtherUserProfilePage() {
           </div>
         </div>
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-lg border border-slate-100 p-6">
+        <div className="bg-white/75 backdrop-blur rounded-3xl shadow-xl shadow-blue-500/10 border border-slate-100 p-6">
           <h2 className="font-black text-xl text-slate-900 mb-3">About</h2>
 
-          <p className="text-sm text-slate-600 leading-6 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+          <p className="text-sm text-slate-600 leading-6 bg-white/70 border border-slate-100 rounded-2xl p-4">
             {profile.extraInfo || "No information added yet."}
           </p>
         </div>

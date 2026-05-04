@@ -1,3 +1,4 @@
+// Target file: frontend/src/app/dashboard/messages/page.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -453,9 +454,9 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="relative bg-white/90 backdrop-blur rounded-3xl shadow-xl border border-indigo-100 p-6 mb-6">
+        <div className="relative bg-white/75 backdrop-blur rounded-3xl shadow-2xl shadow-blue-500/15 border border-indigo-100 p-6 mb-6">
           <div>
             <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold mb-3 border border-indigo-100">
               Team Communication
@@ -478,7 +479,7 @@ export default function MessagesPage() {
           </button>
         </div>
 
-        <div className="bg-white/95 rounded-3xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[720px] border border-indigo-100">
+        <div className="bg-white/75 rounded-3xl shadow-2xl shadow-blue-500/15 overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[720px] border border-indigo-100">
           <aside className="md:col-span-4 lg:col-span-3 border-r border-indigo-100 bg-gradient-to-b from-indigo-50/70 via-white to-blue-50/70">
             <div className="p-4 border-b border-indigo-100 bg-white">
               <p className="text-sm font-black text-slate-800">
@@ -507,7 +508,7 @@ export default function MessagesPage() {
                       }}
                       className={`w-full text-left p-3 rounded-2xl transition flex gap-3 items-center ${
                         selected
-                          ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md"
+                          ? "bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 text-white shadow-xl shadow-blue-500/10 shadow-blue-500/10"
                           : "bg-white hover:bg-indigo-50 border border-slate-100 text-slate-700"
                       }`}
                     >
@@ -576,7 +577,7 @@ export default function MessagesPage() {
                     <button
                       onClick={clearChat}
                       disabled={clearingChat || messages.length === 0}
-                      className="bg-rose-50 hover:bg-rose-100 disabled:bg-slate-100 disabled:text-slate-400 text-rose-600 px-4 py-2 rounded-2xl text-sm font-bold border border-rose-100"
+                      className="bg-rose-50 hover:bg-rose-100 disabled:bg-white/60 disabled:text-slate-400 text-rose-600 px-4 py-2 rounded-2xl text-sm font-bold border border-rose-100"
                     >
                       {clearingChat ? "Deleting..." : "Clear Chat"}
                     </button>
@@ -631,14 +632,14 @@ export default function MessagesPage() {
                           <div
                             className={`max-w-[75%] rounded-3xl px-4 py-3 shadow-sm ${
                               isMe
-                                ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-br-md"
-                                : "bg-white border border-slate-200 text-slate-800 rounded-bl-md"
+                                ? "bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 text-white rounded-br-md"
+                                : "bg-white/75 backdrop-blur-xl border-white/60 border border-slate-200 text-slate-800 rounded-bl-md"
                             }`}
                           >
                             {editingId === m.id ? (
                               <div className="space-y-2">
                                 <textarea
-                                  className="text-slate-900 bg-white border border-slate-200 p-2 w-full rounded-xl min-w-[260px]"
+                                  className="text-slate-900 bg-white/75 backdrop-blur-xl border-white/60 border border-slate-200 p-2 w-full rounded-xl min-w-[260px]"
                                   value={editingText}
                                   onChange={(e) =>
                                     setEditingText(e.target.value)
@@ -677,7 +678,7 @@ export default function MessagesPage() {
                                     className={`mt-3 rounded-2xl p-3 ${
                                       isMe
                                         ? "bg-white/10 border border-white/20"
-                                        : "bg-slate-50 border border-slate-100"
+                                        : "bg-white/70 border border-slate-100"
                                     }`}
                                   >
                                     {m.fileType?.startsWith("image/") ? (
@@ -789,7 +790,7 @@ export default function MessagesPage() {
 
                   <div className="flex gap-3 items-end">
                     <textarea
-                      className="border border-indigo-100 bg-white p-3 flex-1 rounded-2xl resize-none min-h-[52px] max-h-32 focus:outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm"
+                      className="border border-indigo-100 bg-white/75 backdrop-blur-xl p-3 flex-1 rounded-2xl resize-none min-h-[52px] max-h-32 focus:outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={(e) => {
@@ -815,7 +816,7 @@ export default function MessagesPage() {
 
                     <button
                       onClick={sendMessage}
-                      className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:opacity-90 text-white px-6 py-3 rounded-2xl font-black shadow-md"
+                      className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 hover:opacity-90 text-white px-6 py-3 rounded-2xl font-black shadow-xl shadow-blue-500/10 shadow-blue-500/10"
                     >
                       Send
                     </button>

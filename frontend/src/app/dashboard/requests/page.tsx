@@ -1,3 +1,4 @@
+// Target file: frontend/src/app/dashboard/requests/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -322,7 +323,7 @@ export default function RequestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100 p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -334,17 +335,17 @@ export default function RequestsPage() {
 
           <button
             onClick={() => router.push("/dashboard")}
-            className="bg-white border px-4 py-2 rounded-xl shadow-sm"
+            className="bg-white/75 backdrop-blur-xl border-white/60 border px-4 py-2 rounded-xl shadow-sm"
           >
             Back
           </button>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl shadow mb-6 space-y-4">
+        <div className="bg-white/75 backdrop-blur-xl p-5 rounded-2xl shadow mb-6 space-y-4">
           <h2 className="font-bold text-lg">Create Request</h2>
 
           <select
-            className="border p-3 w-full rounded-xl"
+            className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl"
             value={type}
             onChange={(e) => {
               setType(e.target.value);
@@ -357,27 +358,27 @@ export default function RequestsPage() {
           </select>
 
           {type === "ROLE_CHANGE" && (
-            <select className="border p-3 w-full rounded-xl" value={targetRole} onChange={(e) => setTargetRole(e.target.value)}>
+            <select className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl" value={targetRole} onChange={(e) => setTargetRole(e.target.value)}>
               {roles.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           )}
 
           {type === "TEAM_CHANGE" && (
-            <select className="border p-3 w-full rounded-xl" value={targetTeam} onChange={(e) => setTargetTeam(e.target.value)}>
+            <select className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl" value={targetTeam} onChange={(e) => setTargetTeam(e.target.value)}>
               {teams.map((team) => <option key={team} value={team}>{team}</option>)}
             </select>
           )}
 
           {(type === "TASK_HELP" || type === "DEADLINE_EXTENSION") && (
-            <input className="border p-3 w-full rounded-xl" placeholder="Task id" value={taskInfo} onChange={(e) => setTaskInfo(e.target.value)} />
+            <input className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl" placeholder="Task id" value={taskInfo} onChange={(e) => setTaskInfo(e.target.value)} />
           )}
 
           {type === "DEADLINE_EXTENSION" && (
-            <input type="date" className="border p-3 w-full rounded-xl" value={deadlineDate} onChange={(e) => setDeadlineDate(e.target.value)} />
+            <input type="date" className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl" value={deadlineDate} onChange={(e) => setDeadlineDate(e.target.value)} />
           )}
 
           <textarea
-            className="border p-3 w-full rounded-xl min-h-[120px]"
+            className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl min-h-[120px]"
             placeholder="Explain your request..."
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
@@ -400,11 +401,11 @@ export default function RequestsPage() {
               const canApproveOrReject = isReceiver && r.status === "PENDING";
 
               return (
-                <div key={r.id} className="bg-white border p-5 rounded-2xl shadow-sm">
+                <div key={r.id} className="bg-white/75 backdrop-blur-xl border-white/60 border p-5 rounded-2xl shadow-sm">
                   {editingRequestId === r.id ? (
                     <div className="space-y-3">
                       <select
-                        className="border p-3 w-full rounded-xl"
+                        className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl"
                         value={editType}
                         onChange={(e) => {
                           setEditType(e.target.value);
@@ -417,26 +418,26 @@ export default function RequestsPage() {
                       </select>
 
                       {editType === "ROLE_CHANGE" && (
-                        <select className="border p-3 w-full rounded-xl" value={editTargetRole} onChange={(e) => setEditTargetRole(e.target.value)}>
+                        <select className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl" value={editTargetRole} onChange={(e) => setEditTargetRole(e.target.value)}>
                           {roles.map((r) => <option key={r} value={r}>{r}</option>)}
                         </select>
                       )}
 
                       {editType === "TEAM_CHANGE" && (
-                        <select className="border p-3 w-full rounded-xl" value={editTargetTeam} onChange={(e) => setEditTargetTeam(e.target.value)}>
+                        <select className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl" value={editTargetTeam} onChange={(e) => setEditTargetTeam(e.target.value)}>
                           {teams.map((team) => <option key={team} value={team}>{team}</option>)}
                         </select>
                       )}
 
                       {(editType === "TASK_HELP" || editType === "DEADLINE_EXTENSION") && (
-                        <input className="border p-3 w-full rounded-xl" placeholder="Task id" value={editTaskInfo} onChange={(e) => setEditTaskInfo(e.target.value)} />
+                        <input className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl" placeholder="Task id" value={editTaskInfo} onChange={(e) => setEditTaskInfo(e.target.value)} />
                       )}
 
                       {editType === "DEADLINE_EXTENSION" && (
-                        <input type="date" className="border p-3 w-full rounded-xl" value={editDeadlineDate} onChange={(e) => setEditDeadlineDate(e.target.value)} />
+                        <input type="date" className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl" value={editDeadlineDate} onChange={(e) => setEditDeadlineDate(e.target.value)} />
                       )}
 
-                      <textarea className="border p-3 w-full rounded-xl min-h-[120px]" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                      <textarea className="border border-white/60 bg-white/80 backdrop-blur p-3 w-full rounded-xl min-h-[120px]" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
 
                       <div className="flex gap-2">
                         <button onClick={() => updateRequest(r)} className="bg-green-500 text-white px-4 py-2 rounded-lg">

@@ -1,3 +1,4 @@
+// Target file: frontend/src/app/dashboard/profile/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -193,9 +194,9 @@ export default function ProfilePage() {
       return {
         icon: "🔔",
         label: "General",
-        dotClass: "bg-slate-500",
-        badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
-        iconClass: "bg-slate-100 text-slate-700",
+        dotClass: "bg-white/700",
+        badgeClass: "bg-white/60 text-slate-700 border-slate-200",
+        iconClass: "bg-white/60 text-slate-700",
       };
     }
 
@@ -242,9 +243,9 @@ export default function ProfilePage() {
     return {
       icon: "🔔",
       label: type,
-      dotClass: "bg-slate-500",
-      badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
-      iconClass: "bg-slate-100 text-slate-700",
+      dotClass: "bg-white/700",
+      badgeClass: "bg-white/60 text-slate-700 border-slate-200",
+      iconClass: "bg-white/60 text-slate-700",
     };
   };
 
@@ -340,7 +341,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100">
         <p className="font-bold text-slate-600 animate-pulse">
           Loading profile...
         </p>
@@ -352,13 +353,13 @@ export default function ProfilePage() {
     typeof window !== "undefined" &&
     localStorage.getItem("email") === profile.email;
       return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100 p-6">
       <div className="max-w-5xl mx-auto space-y-6">
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-xl border border-slate-100 p-6">
+        <div className="bg-white/75 backdrop-blur rounded-3xl shadow-2xl shadow-blue-500/15 border border-slate-100 p-6">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="relative w-fit">
-              <div className="w-24 h-24 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl font-black overflow-hidden border-4 border-white shadow-md">
+              <div className="w-24 h-24 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl font-black overflow-hidden border-4 border-white shadow-xl shadow-blue-500/10 shadow-blue-500/10">
                 {previewImage ? (
                   <img
                     src={previewImage}
@@ -411,7 +412,7 @@ export default function ProfilePage() {
                   <a
                     href={profile.github}
                     target="_blank"
-                    className="bg-slate-50 hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-2xl text-sm font-bold border border-slate-200"
+                    className="bg-white/70 hover:bg-white/60 text-slate-700 px-4 py-2 rounded-2xl text-sm font-bold border border-slate-200"
                   >
                     GitHub
                   </a>
@@ -421,49 +422,49 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-lg border border-slate-100 p-6 space-y-4">
+        <div className="bg-white/75 backdrop-blur rounded-3xl shadow-xl shadow-blue-500/10 border border-slate-100 p-6 space-y-4">
           <h2 className="font-black text-xl text-slate-900">Profile Details</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input
-              className="border border-slate-200 bg-slate-50 p-3 rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 rounded-2xl"
               value={profile.name}
               disabled
             />
 
             <input
-              className="border border-slate-200 bg-slate-50 p-3 rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 rounded-2xl"
               value={profile.surname}
               disabled
             />
 
             <input
-              className="border border-slate-200 bg-slate-50 p-3 rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 rounded-2xl"
               value={profile.email}
               disabled
             />
 
             <input
-              className="border border-slate-200 bg-slate-50 p-3 rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 rounded-2xl"
               value={profile.department}
               disabled
             />
 
             <input
-              className="border border-slate-200 bg-slate-50 p-3 rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 rounded-2xl"
               value={profile.role}
               disabled
             />
 
             <input
-              className="border border-slate-200 bg-slate-50 p-3 rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 rounded-2xl"
               value={profile.birthDate || ""}
               disabled
             />
           </div>
 
           <input
-            className="border border-slate-200 bg-slate-50 p-3 w-full rounded-2xl"
+            className="border border-slate-200 bg-white/70 p-3 w-full rounded-2xl"
             placeholder="LinkedIn URL"
             value={profile.linkedin || ""}
             disabled={!isOwnProfile}
@@ -473,7 +474,7 @@ export default function ProfilePage() {
           />
 
           <input
-            className="border border-slate-200 bg-slate-50 p-3 w-full rounded-2xl"
+            className="border border-slate-200 bg-white/70 p-3 w-full rounded-2xl"
             placeholder="GitHub URL"
             value={profile.github || ""}
             disabled={!isOwnProfile}
@@ -483,7 +484,7 @@ export default function ProfilePage() {
           />
 
           <textarea
-            className="border border-slate-200 bg-slate-50 p-3 w-full rounded-2xl min-h-[110px]"
+            className="border border-slate-200 bg-white/70 p-3 w-full rounded-2xl min-h-[110px]"
             placeholder="About..."
             value={profile.extraInfo || ""}
             disabled={!isOwnProfile}
@@ -495,7 +496,7 @@ export default function ProfilePage() {
           {isOwnProfile && (
             <button
               onClick={updateProfile}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black shadow-md"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black shadow-xl shadow-blue-500/10 shadow-blue-500/10"
             >
               Save Changes
             </button>
@@ -503,7 +504,7 @@ export default function ProfilePage() {
         </div>
 
         {isOwnProfile && (
-          <div className="bg-white/95 backdrop-blur rounded-3xl shadow-lg border border-slate-100 p-6 space-y-4">
+          <div className="bg-white/75 backdrop-blur rounded-3xl shadow-xl shadow-blue-500/10 border border-slate-100 p-6 space-y-4">
             <div>
               <h2 className="font-black text-xl text-slate-900">
                 Change Password
@@ -515,7 +516,7 @@ export default function ProfilePage() {
 
             <input
               type="password"
-              className="border border-slate-200 bg-slate-50 p-3 w-full rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 w-full rounded-2xl"
               placeholder="Current Password"
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
@@ -523,7 +524,7 @@ export default function ProfilePage() {
 
             <input
               type="password"
-              className="border border-slate-200 bg-slate-50 p-3 w-full rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 w-full rounded-2xl"
               placeholder="New Password"
               value={newPassword}
               onFocus={() => setShowPasswordRules(true)}
@@ -532,7 +533,7 @@ export default function ProfilePage() {
 
             <input
               type="password"
-              className="border border-slate-200 bg-slate-50 p-3 w-full rounded-2xl"
+              className="border border-slate-200 bg-white/70 p-3 w-full rounded-2xl"
               placeholder="Confirm New Password"
               value={confirmNewPassword}
               onChange={(e) => setConfirmNewPassword(e.target.value)}
@@ -553,7 +554,7 @@ export default function ProfilePage() {
             )}
 
             {showPasswordRules && (
-              <div className="space-y-1 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="space-y-1 rounded-2xl border border-slate-200 bg-white/70 p-4">
                 <Rule ok={passwordRules.length} text="At least 8 characters" />
                 <Rule ok={passwordRules.upper} text="Contains uppercase letter" />
                 <Rule ok={passwordRules.lower} text="Contains lowercase letter" />
@@ -571,7 +572,7 @@ export default function ProfilePage() {
 
             <button
               onClick={changePassword}
-              className="bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 text-white px-6 py-3 rounded-2xl font-black shadow-md"
+              className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 hover:from-indigo-700 hover:to-blue-600 text-white px-6 py-3 rounded-2xl font-black shadow-xl shadow-blue-500/10 shadow-blue-500/10"
             >
               Update Password
             </button>
@@ -579,28 +580,28 @@ export default function ProfilePage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-3xl shadow-md border-l-8 border-indigo-300">
+          <div className="bg-white/75 backdrop-blur-xl p-5 rounded-3xl shadow-xl shadow-blue-500/10 shadow-blue-500/10 border-l-8 border-indigo-300">
             <p className="text-sm text-slate-500">Total Tasks</p>
             <p className="text-3xl font-black text-indigo-600">
               {stats.totalTasks}
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl shadow-md border-l-8 border-emerald-300">
+          <div className="bg-white/75 backdrop-blur-xl p-5 rounded-3xl shadow-xl shadow-blue-500/10 shadow-blue-500/10 border-l-8 border-emerald-300">
             <p className="text-sm text-slate-500">Completed</p>
             <p className="text-3xl font-black text-emerald-600">
               {stats.completedTasks}
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl shadow-md border-l-8 border-amber-300">
+          <div className="bg-white/75 backdrop-blur-xl p-5 rounded-3xl shadow-xl shadow-blue-500/10 shadow-blue-500/10 border-l-8 border-amber-300">
             <p className="text-sm text-slate-500">Pending</p>
             <p className="text-3xl font-black text-amber-600">
               {stats.pendingTasks}
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl shadow-md border-l-8 border-blue-300">
+          <div className="bg-white/75 backdrop-blur-xl p-5 rounded-3xl shadow-xl shadow-blue-500/10 shadow-blue-500/10 border-l-8 border-blue-300">
             <p className="text-sm text-slate-500">Success Rate</p>
             <p className="text-3xl font-black text-blue-600">
               {stats.successRate}%
@@ -608,7 +609,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-lg border border-slate-100 p-6">
+        <div className="bg-white/75 backdrop-blur rounded-3xl shadow-xl shadow-blue-500/10 border border-slate-100 p-6">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="font-black text-xl text-slate-900">
@@ -633,7 +634,7 @@ export default function ProfilePage() {
             {activityLoading ? (
               <p className="text-sm text-slate-400">Loading activities...</p>
             ) : activities.length === 0 ? (
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center">
+              <div className="bg-white/70 border border-slate-100 rounded-2xl p-5 text-center">
                 <p className="text-sm font-bold text-slate-500">
                   No activity yet
                 </p>
@@ -648,7 +649,7 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={activity.id}
-                    className="flex justify-between gap-4 bg-slate-50 border border-slate-100 rounded-2xl p-4"
+                    className="flex justify-between gap-4 bg-white/70 border border-slate-100 rounded-2xl p-4"
                   >
                     <div className="flex items-start gap-3">
                       <span
@@ -680,7 +681,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-lg border border-slate-100 p-6">
+        <div className="bg-white/75 backdrop-blur rounded-3xl shadow-xl shadow-blue-500/10 border border-slate-100 p-6">
           <h2 className="font-black text-xl text-slate-900 mb-4">
             Activity Timeline
           </h2>

@@ -1,3 +1,4 @@
+// Target file: frontend/src/app/projects/[id]/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -184,8 +185,8 @@ export default function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500">
-        <p className="rounded-3xl bg-white/90 px-8 py-5 font-black text-blue-900 shadow-xl">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100">
+        <p className="rounded-3xl bg-white/75 px-8 py-5 font-black text-blue-900 shadow-2xl shadow-blue-500/15">
           Loading project...
         </p>
       </div>
@@ -194,8 +195,8 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 p-6">
-        <div className="rounded-3xl bg-white/95 p-8 text-center shadow-xl">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100 p-6">
+        <div className="rounded-3xl bg-white/75 p-8 text-center shadow-2xl shadow-blue-500/15">
           <h1 className="text-2xl font-black text-blue-950">Project not found</h1>
           <button
             onClick={() => router.push("/projects")}
@@ -209,9 +210,9 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100 p-6">
       <div className="w-full space-y-6">
-        <div className="rounded-3xl border border-white/20 bg-white/95 p-7 shadow-2xl backdrop-blur">
+        <div className="rounded-3xl border border-white/20 bg-white/75 p-7 shadow-2xl backdrop-blur">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <button
@@ -287,7 +288,7 @@ export default function ProjectDetailPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="rounded-3xl border border-white/20 bg-white/95 p-6 shadow-xl lg:col-span-2">
+          <div className="rounded-3xl border border-white/20 bg-white/75 p-6 shadow-2xl shadow-blue-500/15 lg:col-span-2">
             <h2 className="text-xl font-black text-blue-950">Project Tasks</h2>
             <p className="mt-1 text-sm text-blue-900/60">
               Tasks connected to this project.
@@ -336,7 +337,7 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="space-y-6">
-            <div className="rounded-3xl border border-white/20 bg-white/95 p-6 shadow-xl">
+            <div className="rounded-3xl border border-white/20 bg-white/75 p-6 shadow-2xl shadow-blue-500/15">
               <h2 className="text-xl font-black text-blue-950">Members</h2>
               <div className="mt-4 flex flex-wrap gap-2">
                 {project.memberEmails && project.memberEmails.length > 0 ? (
@@ -355,7 +356,7 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/20 bg-white/95 p-6 shadow-xl">
+            <div className="rounded-3xl border border-white/20 bg-white/75 p-6 shadow-2xl shadow-blue-500/15">
               <h2 className="text-xl font-black text-blue-950">Timeline</h2>
               <div className="mt-4 space-y-3">
                 <div className="rounded-2xl bg-blue-50 p-4">
@@ -369,7 +370,7 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/20 bg-white/95 p-6 shadow-xl">
+            <div className="rounded-3xl border border-white/20 bg-white/75 p-6 shadow-2xl shadow-blue-500/15">
               <h2 className="text-xl font-black text-blue-950">Activity Log</h2>
               <div className="mt-4 space-y-3">
                 {activities.length === 0 ? (

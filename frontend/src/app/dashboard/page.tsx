@@ -103,8 +103,12 @@ export default function Dashboard() {
   const [commentFiles, setCommentFiles] = useState<{
     [key: number]: { fileUrl: string; fileName: string; fileType: string };
   }>({});
-  const [mentionSuggestions, setMentionSuggestions] = useState<{ [key: number]: any[] }>({});
-  const [showMentionBox, setShowMentionBox] = useState<{ [key: number]: boolean }>({});
+  const [mentionSuggestions, setMentionSuggestions] = useState<{
+    [key: number]: any[];
+  }>({});
+  const [showMentionBox, setShowMentionBox] = useState<{
+    [key: number]: boolean;
+  }>({});
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
 
@@ -133,7 +137,7 @@ export default function Dashboard() {
 
   const currentEmail =
     typeof window !== "undefined" ? localStorage.getItem("email") : "";
-      useEffect(() => {
+  useEffect(() => {
     setMounted(true);
 
     const token = localStorage.getItem("token");
@@ -146,9 +150,12 @@ export default function Dashboard() {
     const randomIndex = Math.floor(Math.random() * quotes.length);
     setDailyQuote(quotes[randomIndex]);
 
-    Promise.all([fetchUsers(), fetchProjects(), fetchTasks(), fetchNotifications()]).finally(
-      () => setLoading(false)
-    );
+    Promise.all([
+      fetchUsers(),
+      fetchProjects(),
+      fetchTasks(),
+      fetchNotifications(),
+    ]).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -219,7 +226,7 @@ export default function Dashboard() {
 
   const fetchComments = async (taskId: number) => {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/comments/task/${taskId}`
+      `${process.env.NEXT_PUBLIC_API_URL}/api/comments/task/${taskId}`,
     );
 
     const data = await res.json();
@@ -237,8 +244,8 @@ export default function Dashboard() {
 
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${encodeURIComponent(
-        userEmail
-      )}`
+        userEmail,
+      )}`,
     );
 
     const data = await res.json();
@@ -246,9 +253,12 @@ export default function Dashboard() {
   };
 
   const markNotificationAsRead = async (id: number) => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${id}/read`, {
-      method: "PUT",
-    });
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${id}/read`,
+      {
+        method: "PUT",
+      },
+    );
 
     fetchNotifications();
   };
@@ -260,11 +270,11 @@ export default function Dashboard() {
 
     await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/read-all/${encodeURIComponent(
-        userEmail
+        userEmail,
       )}`,
       {
         method: "PUT",
-      }
+      },
     );
 
     fetchNotifications();
@@ -305,7 +315,9 @@ export default function Dashboard() {
 
       setTimeout(() => {
         if (notification.taskId) {
-          const element = document.getElementById(`task-${notification.taskId}`);
+          const element = document.getElementById(
+            `task-${notification.taskId}`,
+          );
 
           if (element) {
             element.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -321,7 +333,9 @@ export default function Dashboard() {
 
       setTimeout(() => {
         if (notification.taskId) {
-          const element = document.getElementById(`task-${notification.taskId}`);
+          const element = document.getElementById(
+            `task-${notification.taskId}`,
+          );
 
           if (element) {
             element.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -337,7 +351,9 @@ export default function Dashboard() {
 
       setTimeout(() => {
         if (notification.taskId) {
-          const element = document.getElementById(`task-${notification.taskId}`);
+          const element = document.getElementById(
+            `task-${notification.taskId}`,
+          );
 
           if (element) {
             element.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -350,11 +366,11 @@ export default function Dashboard() {
 
     router.push("/dashboard");
   };
-    const getUserByEmail = (email?: string | null) => {
+  const getUserByEmail = (email?: string | null) => {
     if (!email) return null;
 
     return users.find(
-      (u) => (u.email || "").toLowerCase() === email.trim().toLowerCase()
+      (u) => (u.email || "").toLowerCase() === email.trim().toLowerCase(),
     );
   };
 
@@ -429,7 +445,7 @@ export default function Dashboard() {
   };
 
   const unreadNotificationCount = notifications.filter(
-    (notification) => !notification.readStatus
+    (notification) => !notification.readStatus,
   ).length;
 
   const getNotificationVisual = (type?: string) => {
@@ -502,7 +518,7 @@ export default function Dashboard() {
 
     router.push(`/dashboard/profile/${encodeURIComponent(cleanEmail)}`);
   };
-    const UserHoverCard = ({ email }: { email?: string | null }) => {
+  const UserHoverCard = ({ email }: { email?: string | null }) => {
     if (!email) return <span>-</span>;
 
     const cleanEmail = email.trim();
@@ -573,7 +589,7 @@ export default function Dashboard() {
       </span>
     );
   };
-    const CurrentUserProfileBox = () => {
+  const CurrentUserProfileBox = () => {
     const user = getUserByEmail(currentEmail);
 
     const profileAndNotificationButtons = (
@@ -672,42 +688,42 @@ export default function Dashboard() {
                 const visual = getNotificationVisual(notification.type);
 
                 return (
-                <button
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`w-full text-left p-3 rounded-2xl border transition hover:scale-[1.01] ${
-                    notification.readStatus
-                      ? "bg-white border-blue-100"
-                      : "bg-indigo-50 border-indigo-100"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span
-                        className={`mb-2 inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-black ${visual.badgeClass}`}
-                      >
-                        <span>{visual.icon}</span>
-                        {visual.label}
-                      </span>
+                  <button
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`w-full text-left p-3 rounded-2xl border transition hover:scale-[1.01] ${
+                      notification.readStatus
+                        ? "bg-white border-blue-100"
+                        : "bg-indigo-50 border-indigo-100"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span
+                          className={`mb-2 inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-black ${visual.badgeClass}`}
+                        >
+                          <span>{visual.icon}</span>
+                          {visual.label}
+                        </span>
 
-                      <p className="text-sm font-black text-blue-950">
-                        {notification.title}
-                      </p>
+                        <p className="text-sm font-black text-blue-950">
+                          {notification.title}
+                        </p>
+                      </div>
+
+                      {!notification.readStatus && (
+                        <span className="w-2 h-2 rounded-full bg-indigo-600 mt-1"></span>
+                      )}
                     </div>
 
-                    {!notification.readStatus && (
-                      <span className="w-2 h-2 rounded-full bg-indigo-600 mt-1"></span>
-                    )}
-                  </div>
+                    <p className="text-xs text-blue-700/70 mt-1">
+                      {notification.message}
+                    </p>
 
-                  <p className="text-xs text-blue-700/70 mt-1">
-                    {notification.message}
-                  </p>
-
-                  <p className="text-[10px] text-blue-700/50 mt-2">
-                    {formatNotificationDate(notification.createdAt)}
-                  </p>
-                </button>
+                    <p className="text-[10px] text-blue-700/50 mt-2">
+                      {formatNotificationDate(notification.createdAt)}
+                    </p>
+                  </button>
                 );
               })}
             </div>
@@ -748,7 +764,7 @@ export default function Dashboard() {
         {notificationPanel}
         {profileMenu}
       </>,
-      document.body
+      document.body,
     );
   };
 
@@ -804,9 +820,7 @@ export default function Dashboard() {
           const searchable = `${fullName} ${u.email || ""}`.toLowerCase();
 
           return (
-            u.email !== currentEmail &&
-            fullName &&
-            searchable.includes(search)
+            u.email !== currentEmail && fullName && searchable.includes(search)
           );
         })
         .slice(0, 6);
@@ -922,7 +936,7 @@ export default function Dashboard() {
           fileName: comment.fileName || null,
           fileType: comment.fileType || null,
         }),
-      }
+      },
     );
 
     if (!res.ok) {
@@ -939,11 +953,11 @@ export default function Dashboard() {
   const deleteComment = async (comment: Comment) => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/comments/${comment.id}?userEmail=${encodeURIComponent(
-        currentEmail || ""
+        currentEmail || "",
       )}`,
       {
         method: "DELETE",
-      }
+      },
     );
 
     if (!res.ok) {
@@ -954,7 +968,7 @@ export default function Dashboard() {
     fetchComments(comment.taskId);
     toast.success("Comment deleted");
   };
-    const defaultTeams = [
+  const defaultTeams = [
     "Frontend",
     "Backend",
     "Database",
@@ -969,7 +983,7 @@ export default function Dashboard() {
     new Set([
       ...defaultTeams,
       ...users.map((u) => u.department).filter(Boolean),
-    ])
+    ]),
   );
 
   const usersBySelectedTeam = users.filter((u) => {
@@ -995,7 +1009,9 @@ export default function Dashboard() {
     const matchesSearch =
       !searchText ||
       task.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      (task.assignedTo || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (task.assignedTo || "")
+        .toLowerCase()
+        .includes(searchText.toLowerCase()) ||
       (task.createdBy || "").toLowerCase().includes(searchText.toLowerCase()) ||
       assignedNames.toLowerCase().includes(searchText.toLowerCase()) ||
       getUserFullName(task.createdBy)
@@ -1007,50 +1023,84 @@ export default function Dashboard() {
 
   const totalTasks = filteredTasks.length;
   const completedTasks = filteredTasks.filter(
-    (task) => task.status === "DONE"
+    (task) => task.status === "DONE",
   ).length;
   const inProgressTasks = filteredTasks.filter(
-    (task) => task.status === "IN_PROGRESS"
+    (task) => task.status === "IN_PROGRESS",
   ).length;
   const testingTasks = filteredTasks.filter(
-    (task) => task.status === "TEST"
+    (task) => task.status === "TEST",
   ).length;
   const waitingApprovalTasks = filteredTasks.filter(
-    (task) => task.status === "WAITING_APPROVAL"
+    (task) => task.status === "WAITING_APPROVAL",
   ).length;
   const overdueTasks = filteredTasks.filter(
-    (task) => task.dueDate && task.dueDate < today && task.status !== "DONE"
+    (task) => task.dueDate && task.dueDate < today && task.status !== "DONE",
   ).length;
 
   const taskStatusChartData = [
-    { name: "TODO", value: filteredTasks.filter((task) => (task.status || "TODO") === "TODO").length },
-    { name: "IN_PROGRESS", value: filteredTasks.filter((task) => task.status === "IN_PROGRESS").length },
-    { name: "TEST", value: filteredTasks.filter((task) => task.status === "TEST").length },
-    { name: "WAITING_APPROVAL", value: filteredTasks.filter((task) => task.status === "WAITING_APPROVAL").length },
-    { name: "DONE", value: filteredTasks.filter((task) => task.status === "DONE").length },
+    {
+      name: "TODO",
+      value: filteredTasks.filter((task) => (task.status || "TODO") === "TODO")
+        .length,
+    },
+    {
+      name: "IN_PROGRESS",
+      value: filteredTasks.filter((task) => task.status === "IN_PROGRESS")
+        .length,
+    },
+    {
+      name: "TEST",
+      value: filteredTasks.filter((task) => task.status === "TEST").length,
+    },
+    {
+      name: "WAITING_APPROVAL",
+      value: filteredTasks.filter((task) => task.status === "WAITING_APPROVAL")
+        .length,
+    },
+    {
+      name: "DONE",
+      value: filteredTasks.filter((task) => task.status === "DONE").length,
+    },
   ];
 
   const taskPriorityChartData = [
-    { name: "LOW", value: filteredTasks.filter((task) => (task.priority || "MEDIUM") === "LOW").length },
-    { name: "MEDIUM", value: filteredTasks.filter((task) => (task.priority || "MEDIUM") === "MEDIUM").length },
-    { name: "HIGH", value: filteredTasks.filter((task) => task.priority === "HIGH").length },
-    { name: "URGENT", value: filteredTasks.filter((task) => task.priority === "URGENT").length },
+    {
+      name: "LOW",
+      value: filteredTasks.filter(
+        (task) => (task.priority || "MEDIUM") === "LOW",
+      ).length,
+    },
+    {
+      name: "MEDIUM",
+      value: filteredTasks.filter(
+        (task) => (task.priority || "MEDIUM") === "MEDIUM",
+      ).length,
+    },
+    {
+      name: "HIGH",
+      value: filteredTasks.filter((task) => task.priority === "HIGH").length,
+    },
+    {
+      name: "URGENT",
+      value: filteredTasks.filter((task) => task.priority === "URGENT").length,
+    },
   ];
 
-  const completedAssignedToMeTasks = [...filteredTasks]
+  const completedAssignedToMeTasks = [...tasks]
     .filter(
       (task) =>
         task.status === "DONE" &&
-        (task.assignedTo || "").includes(currentEmail || "")
+        (task.assignedTo || "").includes(currentEmail || ""),
     )
     .sort((a, b) => b.id - a.id);
 
-  const completedCreatedByMeTasks = [...filteredTasks]
+  const completedCreatedByMeTasks = [...tasks]
     .filter(
       (task) =>
         task.status === "DONE" &&
         task.createdBy === currentEmail &&
-        !(task.assignedTo || "").includes(currentEmail || "")
+        !(task.assignedTo || "").includes(currentEmail || ""),
     )
     .sort((a, b) => b.id - a.id);
 
@@ -1076,7 +1126,7 @@ export default function Dashboard() {
       toast.error("Please select a user");
       return;
     }
-        if (
+    if (
       (userRole === "ADMIN" || userRole === "MANAGER") &&
       assignMode === "team"
     ) {
@@ -1161,11 +1211,11 @@ export default function Dashboard() {
   const updateStatus = async (taskId: number, status: string) => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${taskId}/status?status=${status}&userEmail=${encodeURIComponent(
-        currentEmail || ""
+        currentEmail || "",
       )}`,
       {
         method: "PUT",
-      }
+      },
     );
 
     if (!res.ok) {
@@ -1186,11 +1236,11 @@ export default function Dashboard() {
   const approveTask = async (taskId: number) => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${taskId}/approve?reviewerEmail=${encodeURIComponent(
-        currentEmail || ""
+        currentEmail || "",
       )}`,
       {
         method: "PUT",
-      }
+      },
     );
 
     if (!res.ok) {
@@ -1213,13 +1263,13 @@ export default function Dashboard() {
 
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${taskId}/reject?reviewerEmail=${encodeURIComponent(
-        currentEmail || ""
+        currentEmail || "",
       )}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(note.trim()),
-      }
+      },
     );
 
     if (!res.ok) {
@@ -1236,7 +1286,7 @@ export default function Dashboard() {
     fetchNotifications();
     toast.success("Revision requested");
   };
-    const startEditTask = (task: Task) => {
+  const startEditTask = (task: Task) => {
     setEditingTaskId(task.id);
     setEditTaskTitle(task.title || "");
     setEditTaskDescription(task.description || "");
@@ -1264,7 +1314,7 @@ export default function Dashboard() {
 
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${task.id}?userEmail=${encodeURIComponent(
-        currentEmail || ""
+        currentEmail || "",
       )}`,
       {
         method: "PUT",
@@ -1277,7 +1327,7 @@ export default function Dashboard() {
           priority: editTaskPriority,
           dueDate: editTaskDueDate,
         }),
-      }
+      },
     );
 
     if (!res.ok) {
@@ -1305,11 +1355,11 @@ export default function Dashboard() {
 
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${task.id}?userEmail=${encodeURIComponent(
-        currentEmail || ""
+        currentEmail || "",
       )}`,
       {
         method: "DELETE",
-      }
+      },
     );
 
     if (!res.ok) {
@@ -1346,19 +1396,59 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-950 via-indigo-900 to-cyan-800">
-        <div className="bg-white/90 backdrop-blur px-8 py-5 rounded-3xl shadow-lg border border-blue-100">
-          <p className="text-lg font-bold animate-pulse text-blue-900">
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 via-blue-100 to-cyan-100">
+        <div className="bg-white/80 backdrop-blur-2xl px-8 py-5 rounded-3xl shadow-2xl border border-white/60">
+          <p className="text-lg font-bold animate-pulse text-blue-800">
             Loading your workspace...
           </p>
         </div>
       </div>
     );
   }
-    return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-indigo-900 to-cyan-800 p-6">
-      <div className="w-full">
-        <div className="relative bg-blue-50/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-blue-100 p-6 mb-6 min-h-[230px]">
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-100 to-cyan-100 p-6">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-blue-300/35 blur-3xl" />
+        <div className="absolute right-[-8rem] top-20 h-[28rem] w-[28rem] rounded-full bg-cyan-300/30 blur-3xl" />
+        <div className="absolute bottom-[-8rem] left-1/3 h-[30rem] w-[30rem] rounded-full bg-indigo-300/25 blur-3xl" />
+        <div className="absolute left-16 top-40 hidden w-64 rotate-[-8deg] rounded-3xl border border-white/50 bg-white/35 p-4 shadow-2xl backdrop-blur-xl lg:block">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs font-black text-blue-700">
+              Sprint Board
+            </span>
+            <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">
+              Live
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {["Todo", "Doing", "Done"].map((item) => (
+              <div key={item} className="rounded-2xl bg-white/45 p-2">
+                <p className="mb-2 text-[10px] font-black text-slate-500">
+                  {item}
+                </p>
+                <div className="space-y-2">
+                  <div className="h-7 rounded-xl bg-blue-200/70" />
+                  <div className="h-5 rounded-xl bg-cyan-200/70" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="absolute right-20 bottom-24 hidden w-72 rotate-[6deg] rounded-3xl border border-white/50 bg-white/35 p-5 shadow-2xl backdrop-blur-xl xl:block">
+          <p className="text-xs font-black text-slate-500">Project progress</p>
+          <div className="mt-2 flex items-end justify-between">
+            <p className="text-3xl font-black text-blue-700">76%</p>
+            <p className="text-xs font-bold text-cyan-700">On track</p>
+          </div>
+          <div className="mt-4 h-2 rounded-full bg-white/70">
+            <div className="h-2 w-3/4 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400" />
+          </div>
+        </div>
+      </div>
+      <div className="relative z-10 w-full max-w-[1600px] mx-auto">
+        <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/75 p-6 mb-6 min-h-[230px] shadow-2xl backdrop-blur-2xl">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-blue-500/10 via-cyan-400/10 to-indigo-500/10" />
+          <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-cyan-300/35 blur-3xl" />
           <CurrentUserProfileBox />
 
           <div className="pr-44">
@@ -1377,28 +1467,28 @@ export default function Dashboard() {
             <div className="flex gap-2 flex-wrap mt-10">
               <button
                 onClick={() => router.push("/dashboard/messages")}
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-2xl font-semibold shadow-sm border border-blue-100"
+                className="bg-white/70 hover:bg-white text-blue-700 px-4 py-2 rounded-2xl font-semibold shadow-sm border border-white/60 backdrop-blur"
               >
                 💬 Messages
               </button>
 
               <button
                 onClick={() => router.push("/dashboard/requests")}
-                className="bg-violet-50 hover:bg-violet-100 text-violet-700 px-4 py-2 rounded-2xl font-semibold shadow-sm border border-violet-100"
+                className="bg-violet-100/75 hover:bg-violet-100 text-violet-700 px-4 py-2 rounded-2xl font-semibold shadow-sm border border-white/60 backdrop-blur"
               >
                 📝 Requests
               </button>
 
               <button
                 onClick={() => router.push("/projects")}
-                className="bg-cyan-50 hover:bg-cyan-100 text-cyan-700 px-4 py-2 rounded-2xl font-semibold shadow-sm border border-cyan-100"
+                className="bg-cyan-100/75 hover:bg-cyan-100 text-cyan-700 px-4 py-2 rounded-2xl font-semibold shadow-sm border border-white/60 backdrop-blur"
               >
                 📁 Projects
               </button>
 
               <button
                 onClick={() => router.push("/kanban")}
-                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-2xl font-semibold shadow-sm border border-emerald-100"
+                className="bg-emerald-100/75 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-2xl font-semibold shadow-sm border border-white/60 backdrop-blur"
               >
                 🧩 Kanban Board
               </button>
@@ -1406,7 +1496,7 @@ export default function Dashboard() {
               {role === "ADMIN" && (
                 <button
                   onClick={() => router.push("/admin")}
-                  className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-2xl font-semibold shadow-sm"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] text-white px-4 py-2 rounded-2xl font-semibold shadow-lg shadow-blue-500/20 transition"
                 >
                   🛠 Role Update
                 </button>
@@ -1416,7 +1506,7 @@ export default function Dashboard() {
         </div>
 
         {(role === "ADMIN" || role === "MANAGER") && (
-          <div className="bg-blue-50/95 backdrop-blur-xl p-6 rounded-3xl shadow-2xl mb-6 space-y-4 border border-blue-100">
+          <div className="bg-white/75 backdrop-blur-2xl p-6 rounded-3xl shadow-xl mb-6 space-y-4 border border-white/60">
             <div>
               <h2 className="font-black text-xl text-blue-950 lg:pr-80">
                 Create and Assign Task
@@ -1427,7 +1517,7 @@ export default function Dashboard() {
             </div>
 
             <input
-              className="border border-blue-100 bg-blue-50 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="border border-white/70 bg-white/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-300"
               value={newTask}
               onChange={(e) => setNewTask(e.target.value)}
               placeholder="Task title"
@@ -1439,7 +1529,7 @@ export default function Dashboard() {
                   Priority
                 </label>
                 <select
-                  className="border border-amber-100 bg-amber-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-300"
+                  className="border border-white/70 bg-amber-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-amber-200"
                   value={newPriority}
                   onChange={(e) => setNewPriority(e.target.value)}
                 >
@@ -1449,13 +1539,13 @@ export default function Dashboard() {
                   <option value="URGENT">URGENT</option>
                 </select>
               </div>
-                            <div>
+              <div>
                 <label className="block text-xs font-black text-blue-800 mb-1 ml-1">
                   Due Date / Deadline
                 </label>
                 <input
                   type="date"
-                  className="border border-blue-100 bg-blue-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="border border-white/70 bg-blue-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-200"
                   value={newDueDate}
                   onChange={(e) => setNewDueDate(e.target.value)}
                 />
@@ -1466,7 +1556,7 @@ export default function Dashboard() {
                   Project
                 </label>
                 <select
-                  className="border border-cyan-100 bg-cyan-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                  className="border border-white/70 bg-cyan-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-cyan-200"
                   value={newProjectId}
                   onChange={(e) => setNewProjectId(e.target.value)}
                 >
@@ -1484,7 +1574,7 @@ export default function Dashboard() {
                   Assignment Type
                 </label>
                 <select
-                  className="border border-indigo-100 bg-indigo-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  className="border border-white/70 bg-indigo-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-200"
                   value={assignMode}
                   onChange={(e) => {
                     setAssignMode(e.target.value as "user" | "team");
@@ -1498,7 +1588,7 @@ export default function Dashboard() {
             </div>
 
             <select
-              className="border border-teal-100 bg-teal-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-300"
+              className="border border-white/70 bg-teal-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-teal-200"
               value={selectedTeam}
               onChange={(e) => {
                 setSelectedTeam(e.target.value);
@@ -1515,7 +1605,7 @@ export default function Dashboard() {
 
             {assignMode === "user" && (
               <select
-                className="border border-blue-100 bg-blue-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-slate-100"
+                className="border border-white/70 bg-blue-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:bg-slate-100"
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
                 disabled={!selectedTeam}
@@ -1535,7 +1625,7 @@ export default function Dashboard() {
 
             <button
               onClick={addTask}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black shadow-md"
+              className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] text-white px-6 py-3 rounded-2xl font-black shadow-lg shadow-blue-500/25 transition"
             >
               {assignMode === "team" ? "Assign Task to Team 🚀" : "Add Task 🚀"}
             </button>
@@ -1543,52 +1633,54 @@ export default function Dashboard() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
-          <div className="bg-blue-50/95 backdrop-blur p-5 rounded-3xl shadow-xl border-l-8 border-indigo-300">
+          <div className="bg-white/70 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60 border-l-8 border-indigo-300">
             <p className="text-sm text-blue-700/70">Total Tasks</p>
             <p className="text-3xl font-black text-indigo-600">{totalTasks}</p>
           </div>
 
-          <div className="bg-blue-50/95 backdrop-blur p-5 rounded-3xl shadow-xl border-l-8 border-emerald-300">
+          <div className="bg-white/70 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60 border-l-8 border-emerald-300">
             <p className="text-sm text-blue-700/70">Completed</p>
             <p className="text-3xl font-black text-emerald-600">
               {completedTasks}
             </p>
           </div>
 
-          <div className="bg-blue-50/95 backdrop-blur p-5 rounded-3xl shadow-xl border-l-8 border-blue-300">
+          <div className="bg-white/70 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60 border-l-8 border-blue-300">
             <p className="text-sm text-blue-700/70">In Progress</p>
             <p className="text-3xl font-black text-blue-600">
               {inProgressTasks}
             </p>
           </div>
 
-          <div className="bg-blue-50/95 backdrop-blur p-5 rounded-3xl shadow-xl border-l-8 border-violet-300">
+          <div className="bg-white/70 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60 border-l-8 border-violet-300">
             <p className="text-sm text-blue-700/70">Testing</p>
             <p className="text-3xl font-black text-violet-600">
               {testingTasks}
             </p>
           </div>
 
-          <div className="bg-blue-50/95 backdrop-blur p-5 rounded-3xl shadow-xl border-l-8 border-purple-300">
+          <div className="bg-white/70 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60 border-l-8 border-purple-300">
             <p className="text-sm text-blue-700/70">Waiting Approval</p>
             <p className="text-3xl font-black text-purple-600">
               {waitingApprovalTasks}
             </p>
           </div>
 
-          <div className="bg-blue-50/95 backdrop-blur p-5 rounded-3xl shadow-xl border-l-8 border-rose-300">
+          <div className="bg-white/70 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60 border-l-8 border-rose-300">
             <p className="text-sm text-blue-700/70">Overdue</p>
             <p className="text-3xl font-black text-rose-600">{overdueTasks}</p>
           </div>
 
-          <div className="bg-blue-50/95 backdrop-blur p-5 rounded-3xl shadow-xl border-l-8 border-cyan-300">
+          <div className="bg-white/70 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60 border-l-8 border-cyan-300">
             <p className="text-sm text-blue-700/70">Projects</p>
-            <p className="text-3xl font-black text-cyan-600">{projects.length}</p>
+            <p className="text-3xl font-black text-cyan-600">
+              {projects.length}
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          <div className="bg-blue-50/95 backdrop-blur p-6 rounded-3xl shadow-xl border border-blue-100">
+          <div className="bg-white/75 backdrop-blur-2xl p-6 rounded-3xl shadow-xl border border-white/60">
             <div className="mb-4">
               <h2 className="font-black text-xl text-blue-950">
                 Task Status Distribution
@@ -1611,7 +1703,15 @@ export default function Dashboard() {
                     {taskStatusChartData.map((entry, index) => (
                       <Cell
                         key={`status-cell-${entry.name}`}
-                        fill={["#f59e0b", "#3b82f6", "#6366f1", "#a855f7", "#10b981"][index % 5]}
+                        fill={
+                          [
+                            "#f59e0b",
+                            "#3b82f6",
+                            "#6366f1",
+                            "#a855f7",
+                            "#10b981",
+                          ][index % 5]
+                        }
                       />
                     ))}
                   </Pie>
@@ -1622,7 +1722,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-blue-50/95 backdrop-blur p-6 rounded-3xl shadow-xl border border-blue-100">
+          <div className="bg-white/75 backdrop-blur-2xl p-6 rounded-3xl shadow-xl border border-white/60">
             <div className="mb-4">
               <h2 className="font-black text-xl text-blue-950">
                 Task Priority Overview
@@ -1639,16 +1739,20 @@ export default function Dashboard() {
                   <YAxis allowDecimals={false} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="value" name="Tasks" fill="#2563eb" radius={[12, 12, 0, 0]} />
+                  <Bar
+                    dataKey="value"
+                    name="Tasks"
+                    fill="#2563eb"
+                    radius={[12, 12, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {(completedAssignedToMeTasks.length > 0 || completedCreatedByMeTasks.length > 0) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            <div className="bg-white/95 backdrop-blur p-5 rounded-3xl shadow-lg border border-emerald-100">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div className="bg-white/75 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div>
                   <h2 className="font-black text-lg text-blue-950">
@@ -1674,9 +1778,14 @@ export default function Dashboard() {
                     <button
                       key={`assigned-done-${task.id}`}
                       onClick={() => {
-                        const element = document.getElementById(`task-${task.id}`);
+                        const element = document.getElementById(
+                          `task-${task.id}`,
+                        );
                         if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "center" });
+                          element.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center",
+                          });
                         }
                       }}
                       className="w-full text-left bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-100 rounded-2xl p-3 transition"
@@ -1693,7 +1802,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="bg-white/95 backdrop-blur p-5 rounded-3xl shadow-lg border border-blue-100">
+            <div className="bg-white/75 backdrop-blur-2xl p-5 rounded-3xl shadow-xl border border-white/60">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div>
                   <h2 className="font-black text-lg text-blue-950">
@@ -1719,9 +1828,14 @@ export default function Dashboard() {
                     <button
                       key={`created-done-${task.id}`}
                       onClick={() => {
-                        const element = document.getElementById(`task-${task.id}`);
+                        const element = document.getElementById(
+                          `task-${task.id}`,
+                        );
                         if (element) {
-                          element.scrollIntoView({ behavior: "smooth", block: "center" });
+                          element.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center",
+                          });
                         }
                       }}
                       className="w-full text-left bg-blue-50/70 hover:bg-blue-100 border border-blue-100 rounded-2xl p-3 transition"
@@ -1730,7 +1844,8 @@ export default function Dashboard() {
                         {task.title}
                       </p>
                       <p className="text-xs text-blue-700/70 mt-1">
-                        Assigned to {(task.assignedTo || "-")
+                        Assigned to{" "}
+                        {(task.assignedTo || "-")
                           .split(",")
                           .map((mail) => getUserFullName(mail.trim()))
                           .join(", ")}
@@ -1741,69 +1856,69 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        )}
-                {(role === "ADMIN" || role === "MANAGER") && (
-          <div className="bg-blue-50/95 backdrop-blur-xl p-6 rounded-3xl shadow-2xl mb-6 space-y-4 border border-blue-100">
-            <div>
-              <h2 className="font-black text-xl text-blue-950 lg:pr-80">Filters</h2>
-              <p className="text-xs text-blue-700/70">
-                Find exactly what you are looking for.
-              </p>
-            </div>
-
-            <input
-              className="border border-blue-100 bg-blue-50 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
-              placeholder="Search by task title, person name or creator..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <select
-                className="border border-teal-100 bg-teal-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-300"
-                value={teamFilter}
-                onChange={(e) => setTeamFilter(e.target.value)}
-              >
-                <option value="">All Teams</option>
-                {teams.map((team) => (
-                  <option key={team} value={team}>
-                    {team}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="border border-cyan-100 bg-cyan-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-300"
-                value={projectFilter}
-                onChange={(e) => setProjectFilter(e.target.value)}
-              >
-                <option value="">All Projects</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={String(project.id)}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="border border-indigo-100 bg-indigo-50/60 p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="TODO">TODO</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="TEST">TEST</option>
-                <option value="WAITING_APPROVAL">WAITING_APPROVAL</option>
-                <option value="DONE">DONE</option>
-              </select>
-            </div>
+      
+        <div className="bg-white/75 backdrop-blur-2xl p-6 rounded-3xl shadow-xl mb-6 space-y-4 border border-white/60">
+          <div>
+            <h2 className="font-black text-xl text-blue-950 lg:pr-80">
+              Filters
+            </h2>
+            <p className="text-xs text-blue-700/70">
+              Filter tasks by title, team, project or workflow status.
+            </p>
           </div>
-        )}
+
+          <input
+            className="border border-white/70 bg-white/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-300"
+            placeholder="Search by task title, person name or creator..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <select
+              className="border border-white/70 bg-teal-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-teal-200"
+              value={teamFilter}
+              onChange={(e) => setTeamFilter(e.target.value)}
+            >
+              <option value="">All Teams</option>
+              {teams.map((team) => (
+                <option key={team} value={team}>
+                  {team}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="border border-white/70 bg-cyan-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-cyan-200"
+              value={projectFilter}
+              onChange={(e) => setProjectFilter(e.target.value)}
+            >
+              <option value="">All Projects</option>
+              {projects.map((project) => (
+                <option key={project.id} value={String(project.id)}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="border border-white/70 bg-indigo-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-200"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All Statuses</option>
+              <option value="TODO">TODO</option>
+              <option value="IN_PROGRESS">IN_PROGRESS</option>
+              <option value="TEST">TEST</option>
+              <option value="WAITING_APPROVAL">WAITING_APPROVAL</option>
+              <option value="DONE">DONE</option>
+            </select>
+          </div>
+        </div>
 
         <div className="space-y-5">
           {filteredTasks.length === 0 ? (
-            <div className="bg-blue-50/95 rounded-3xl border border-blue-100 shadow-lg p-10 text-center text-blue-700/70">
+            <div className="bg-white/70 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-xl p-10 text-center text-slate-600">
               <div className="text-5xl mb-3">🗂️</div>
               <p className="font-bold">No tasks yet</p>
               <p className="text-sm">Your workspace is clean and ready.</p>
@@ -1812,568 +1927,607 @@ export default function Dashboard() {
             [...filteredTasks]
               .sort((a, b) => b.id - a.id)
               .map((task) => {
-              const assignedUser = getUserByEmail(task.assignedTo);
+                const assignedUser = getUserByEmail(task.assignedTo);
 
-              const isAssignedToMe = (task.assignedTo || "").includes(
-                currentEmail || ""
-              );
+                const isAssignedToMe = (task.assignedTo || "").includes(
+                  currentEmail || "",
+                );
 
-              const isCreator = task.createdBy === currentEmail;
-              const canSubmitForApproval =
-                isAssignedToMe &&
-                !isCreator &&
-                task.status !== "WAITING_APPROVAL" &&
-                task.status !== "DONE";
+                const isCreator = task.createdBy === currentEmail;
+                const canSubmitForApproval =
+                  isAssignedToMe &&
+                  !isCreator &&
+                  task.status !== "WAITING_APPROVAL" &&
+                  task.status !== "DONE";
 
-              const canDeleteTask =
-                role === "ADMIN" || task.createdBy === currentEmail;
+                const canDeleteTask =
+                  role === "ADMIN" || task.createdBy === currentEmail;
 
-              const canEditTask =
-                role === "ADMIN" || task.createdBy === currentEmail;
+                const canEditTask =
+                  role === "ADMIN" || task.createdBy === currentEmail;
 
-              return (
-                <div
-                  id={`task-${task.id}`}
-                  key={task.id}
-                  className="relative bg-blue-50/95 p-6 rounded-3xl shadow-lg border border-blue-100 hover:shadow-xl transition"
-                >
-                  <div className="relative">
-                    <div className="w-full">
-                      {editingTaskId === task.id ? (
-                        <div className="space-y-3">
-                          <input
-                            className="border p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                            value={editTaskTitle}
-                            onChange={(e) => setEditTaskTitle(e.target.value)}
-                          />
-
-                          <textarea
-                            className="border p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                            placeholder="Description"
-                            value={editTaskDescription}
-                            onChange={(e) =>
-                              setEditTaskDescription(e.target.value)
-                            }
-                          />
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div>
-                              <label className="block text-xs font-black text-blue-800 mb-1 ml-1">
-                                Status
-                              </label>
-                              <select
-                                className="border p-3 rounded-2xl w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                value={editTaskStatus}
-                                onChange={(e) =>
-                                  setEditTaskStatus(e.target.value)
-                                }
-                              >
-                                <option value="TODO">TODO</option>
-                                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                                <option value="TEST">TEST</option>
-
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-black text-blue-800 mb-1 ml-1">
-                                Priority
-                              </label>
-                              <select
-                                className="border p-3 rounded-2xl w-full focus:outline-none focus:ring-2 focus:ring-amber-300"
-                                value={editTaskPriority}
-                                onChange={(e) =>
-                                  setEditTaskPriority(e.target.value)
-                                }
-                              >
-                                <option value="LOW">LOW</option>
-                                <option value="MEDIUM">MEDIUM</option>
-                                <option value="HIGH">HIGH</option>
-                                <option value="URGENT">URGENT</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-black text-blue-800 mb-1 ml-1">
-                                Due Date / Deadline
-                              </label>
-                              <input
-                                type="date"
-                                className="border p-3 rounded-2xl w-full focus:outline-none focus:ring-2 focus:ring-violet-300"
-                                value={editTaskDueDate}
-                                onChange={(e) =>
-                                  setEditTaskDueDate(e.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => updateTaskFull(task)}
-                              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-2xl font-bold"
-                            >
-                              Save
-                            </button>
-
-                            <button
-                              onClick={cancelEditTask}
-                              className="bg-slate-400 hover:bg-blue-500 text-white px-4 py-2 rounded-2xl font-bold"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex flex-wrap gap-2 mb-3 lg:pr-80">
-                            <span
-                              className={`px-3 py-1 text-xs rounded-full font-black border ${getStatusClass(
-                                task.status
-                              )}`}
-                            >
-                              {task.status || "TODO"}
-                            </span>
-
-                            <span
-                              className={`px-3 py-1 text-xs rounded-full font-black border ${getPriorityClass(
-                                task.priority
-                              )}`}
-                            >
-                              {task.priority || "MEDIUM"}
-                            </span>
-
-                            <span className="px-3 py-1 text-xs rounded-full font-black bg-blue-50 text-blue-900 border border-blue-100">
-                              {task.assignmentType || "-"}
-                            </span>
-                          </div>
-
-                          <p className="font-black text-xl text-blue-950 lg:pr-80">
-                            {task.title}
-                          </p>
-
-                          {task.description && (
-                            <p className="text-sm text-blue-700/70 mt-1 lg:pr-80">
-                              {task.description}
-                            </p>
-                          )}
-
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4 text-sm text-blue-800 w-full">
-                            <div className="bg-indigo-50 rounded-2xl p-3 border border-indigo-100 min-h-[88px] w-full">
-                              <span className="font-black text-indigo-700">
-                                Assigned To:
-                              </span>{" "}
-                              <div className="mt-2">
-                                {(task.assignedTo || "-")
-                                  .split(",")
-                                  .map((email) => {
-                                    const cleanEmail = email.trim();
-
-                                    return (
-                                      <UserHoverCard
-                                        key={cleanEmail || "empty-assigned"}
-                                        email={cleanEmail}
-                                      />
-                                    );
-                                  })}
-                              </div>
-                            </div>
-
-                            <div className="bg-blue-50 rounded-2xl p-3 border border-blue-100 min-h-[88px] w-full">
-                              <span className="font-black text-blue-700">
-                                Created By:
-                              </span>{" "}
-                              <div className="mt-2">
-                                {task.createdBy ? (
-                                  <UserHoverCard email={task.createdBy} />
-                                ) : (
-                                  "-"
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="bg-cyan-50 rounded-2xl p-3 border border-cyan-100">
-                              <span className="font-black text-cyan-700">
-                                Project:
-                              </span>{" "}
-                              {getProjectName(task.projectId)}
-
-                              {getProjectById(task.projectId)?.githubUrl && (
-                                <a
-                                  href={getProjectById(task.projectId)?.githubUrl || "#"}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="ml-2 inline-flex text-xs font-black text-cyan-700 underline"
-                                >
-                                  GitHub
-                                </a>
-                              )}
-                            </div>
-
-                            <p className="bg-teal-50 rounded-2xl p-3 border border-teal-100">
-                              <span className="font-black text-teal-700">
-                                Team:
-                              </span>{" "}
-                              {task.teamName || assignedUser?.department || "-"}
-                            </p>
-
-                            <p className="bg-violet-50 rounded-2xl p-3 border border-violet-100">
-                              <span className="font-black text-violet-700">
-                                Due Date / Deadline:
-                              </span>{" "}
-                              {task.dueDate || "-"}
-                            </p>
-
-                            {task.reviewNote && (
-                              <p className="bg-rose-50 rounded-2xl p-3 border border-rose-100 md:col-span-2">
-                                <span className="font-black text-rose-700">
-                                  Revision Note:
-                                </span>{" "}
-                                {task.reviewNote}
-                              </p>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                                        <div className="flex gap-2 items-center flex-wrap mt-4 lg:mt-0 lg:absolute lg:right-0 lg:top-0 lg:justify-end">
-                      {isAssignedToMe && editingTaskId !== task.id && !isCreator && task.status !== "WAITING_APPROVAL" && task.status !== "DONE" && (
-                        <select
-                          value={task.status || "TODO"}
-                          onChange={(e) =>
-                            updateStatus(task.id, e.target.value)
-                          }
-                          className="border p-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300"
-                        >
-                          <option value="TODO">TODO</option>
-                          <option value="IN_PROGRESS">IN_PROGRESS</option>
-                          <option value="TEST">TEST</option>
-                        </select>
-                      )}
-
-                      {canSubmitForApproval && editingTaskId !== task.id && (
-                        <button
-                          onClick={() => updateStatus(task.id, "DONE")}
-                          className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-2xl text-sm font-bold shadow-sm"
-                        >
-                          Submit for Approval
-                        </button>
-                      )}
-
-                      {isAssignedToMe && !isCreator && task.status === "WAITING_APPROVAL" && editingTaskId !== task.id && (
-                        <span className="bg-purple-50 text-purple-700 border border-purple-200 px-4 py-2 rounded-2xl text-sm font-bold">
-                          Waiting for creator approval
-                        </span>
-                      )}
-
-                      {task.status === "DONE" && editingTaskId !== task.id && (
-                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-2xl text-sm font-bold">
-                          Closed / Approved
-                        </span>
-                      )}
-
-                      {isCreator && editingTaskId !== task.id && task.status !== "WAITING_APPROVAL" && task.status !== "DONE" && (
-                        <select
-                          value={task.status || "TODO"}
-                          onChange={(e) =>
-                            updateStatus(task.id, e.target.value)
-                          }
-                          className="border p-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300"
-                        >
-                          <option value="TODO">TODO</option>
-                          <option value="IN_PROGRESS">IN_PROGRESS</option>
-                          <option value="TEST">TEST</option>
-                          <option value="DONE">DONE</option>
-                        </select>
-                      )}
-
-                      {canEditTask && editingTaskId !== task.id && task.status !== "DONE" && (
-                        <button
-                          onClick={() => startEditTask(task)}
-                          className="bg-amber-400 hover:bg-amber-500 text-white px-4 py-2 rounded-2xl text-sm font-bold shadow-sm"
-                        >
-                          Edit
-                        </button>
-                      )}
-
-                      {canDeleteTask && editingTaskId !== task.id && (
-                        <button
-                          onClick={() => deleteTask(task)}
-                          className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-2xl text-sm font-bold shadow-sm"
-                        >
-                          Delete
-                        </button>
-                      )}
-
-                      {task.status === "WAITING_APPROVAL" &&
-                        isCreator &&
-                        editingTaskId !== task.id && (
-                          <div className="w-full lg:w-72 bg-purple-50 border border-purple-100 rounded-2xl p-3 space-y-2">
-                            <p className="text-xs font-black text-purple-700">
-                              This task is waiting for your review.
-                            </p>
-
-                            <button
-                              onClick={() => approveTask(task.id)}
-                              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold"
-                            >
-                              Approve Task
-                            </button>
-
-                            <textarea
-                              className="w-full border border-rose-100 bg-white p-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-rose-300"
-                              placeholder="Write revision note..."
-                              value={rejectNote[task.id] || ""}
-                              onChange={(e) =>
-                                setRejectNote((prev) => ({
-                                  ...prev,
-                                  [task.id]: e.target.value,
-                                }))
-                              }
+                return (
+                  <div
+                    id={`task-${task.id}`}
+                    key={task.id}
+                    className="relative overflow-hidden bg-white/75 backdrop-blur-2xl p-6 rounded-3xl shadow-xl border border-white/60 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-blue-500/0 via-cyan-400/0 to-indigo-500/0 opacity-0 transition duration-300 hover:opacity-100" />
+                    <div className="pointer-events-none absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-indigo-500" />
+                    <div className="relative">
+                      <div className="w-full">
+                        {editingTaskId === task.id ? (
+                          <div className="space-y-3">
+                            <input
+                              className="border p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                              value={editTaskTitle}
+                              onChange={(e) => setEditTaskTitle(e.target.value)}
                             />
 
-                            <button
-                              onClick={() => rejectTask(task.id)}
-                              className="w-full bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-bold"
+                            <textarea
+                              className="border p-3 w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                              placeholder="Description"
+                              value={editTaskDescription}
+                              onChange={(e) =>
+                                setEditTaskDescription(e.target.value)
+                              }
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-xs font-black text-blue-800 mb-1 ml-1">
+                                  Status
+                                </label>
+                                <select
+                                  className="border p-3 rounded-2xl w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                  value={editTaskStatus}
+                                  onChange={(e) =>
+                                    setEditTaskStatus(e.target.value)
+                                  }
+                                >
+                                  <option value="TODO">TODO</option>
+                                  <option value="IN_PROGRESS">
+                                    IN_PROGRESS
+                                  </option>
+                                  <option value="TEST">TEST</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-black text-blue-800 mb-1 ml-1">
+                                  Priority
+                                </label>
+                                <select
+                                  className="border p-3 rounded-2xl w-full focus:outline-none focus:ring-2 focus:ring-amber-300"
+                                  value={editTaskPriority}
+                                  onChange={(e) =>
+                                    setEditTaskPriority(e.target.value)
+                                  }
+                                >
+                                  <option value="LOW">LOW</option>
+                                  <option value="MEDIUM">MEDIUM</option>
+                                  <option value="HIGH">HIGH</option>
+                                  <option value="URGENT">URGENT</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-black text-blue-800 mb-1 ml-1">
+                                  Due Date / Deadline
+                                </label>
+                                <input
+                                  type="date"
+                                  className="border p-3 rounded-2xl w-full focus:outline-none focus:ring-2 focus:ring-violet-300"
+                                  value={editTaskDueDate}
+                                  onChange={(e) =>
+                                    setEditTaskDueDate(e.target.value)
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => updateTaskFull(task)}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-2xl font-bold"
+                              >
+                                Save
+                              </button>
+
+                              <button
+                                onClick={cancelEditTask}
+                                className="bg-slate-400 hover:bg-blue-500 text-white px-4 py-2 rounded-2xl font-bold"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex flex-wrap gap-2 mb-3 lg:pr-80">
+                              <span
+                                className={`px-3 py-1 text-xs rounded-full font-black border ${getStatusClass(
+                                  task.status,
+                                )}`}
+                              >
+                                {task.status || "TODO"}
+                              </span>
+
+                              <span
+                                className={`px-3 py-1 text-xs rounded-full font-black border ${getPriorityClass(
+                                  task.priority,
+                                )}`}
+                              >
+                                {task.priority || "MEDIUM"}
+                              </span>
+
+                              <span className="px-3 py-1 text-xs rounded-full font-black bg-blue-50 text-blue-900 border border-blue-100">
+                                {task.assignmentType || "-"}
+                              </span>
+                            </div>
+
+                            <p className="font-black text-xl text-blue-950 lg:pr-80">
+                              {task.title}
+                            </p>
+
+                            {task.description && (
+                              <p className="text-sm text-blue-700/70 mt-1 lg:pr-80">
+                                {task.description}
+                              </p>
+                            )}
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4 text-sm text-blue-800 w-full">
+                              <div className="bg-indigo-50 rounded-2xl p-3 border border-indigo-100 min-h-[88px] w-full">
+                                <span className="font-black text-indigo-700">
+                                  Assigned To:
+                                </span>{" "}
+                                <div className="mt-2">
+                                  {(task.assignedTo || "-")
+                                    .split(",")
+                                    .map((email) => {
+                                      const cleanEmail = email.trim();
+
+                                      return (
+                                        <UserHoverCard
+                                          key={cleanEmail || "empty-assigned"}
+                                          email={cleanEmail}
+                                        />
+                                      );
+                                    })}
+                                </div>
+                              </div>
+
+                              <div className="bg-blue-50 rounded-2xl p-3 border border-blue-100 min-h-[88px] w-full">
+                                <span className="font-black text-blue-700">
+                                  Created By:
+                                </span>{" "}
+                                <div className="mt-2">
+                                  {task.createdBy ? (
+                                    <UserHoverCard email={task.createdBy} />
+                                  ) : (
+                                    "-"
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="bg-cyan-50 rounded-2xl p-3 border border-cyan-100">
+                                <span className="font-black text-cyan-700">
+                                  Project:
+                                </span>{" "}
+                                {getProjectName(task.projectId)}
+                                {getProjectById(task.projectId)?.githubUrl && (
+                                  <a
+                                    href={
+                                      getProjectById(task.projectId)
+                                        ?.githubUrl || "#"
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="ml-2 inline-flex text-xs font-black text-cyan-700 underline"
+                                  >
+                                    GitHub
+                                  </a>
+                                )}
+                              </div>
+
+                              <p className="bg-teal-50 rounded-2xl p-3 border border-teal-100">
+                                <span className="font-black text-teal-700">
+                                  Team:
+                                </span>{" "}
+                                {task.teamName ||
+                                  assignedUser?.department ||
+                                  "-"}
+                              </p>
+
+                              <p className="bg-violet-50 rounded-2xl p-3 border border-violet-100">
+                                <span className="font-black text-violet-700">
+                                  Due Date / Deadline:
+                                </span>{" "}
+                                {task.dueDate || "-"}
+                              </p>
+
+                              {task.reviewNote && (
+                                <p className="bg-rose-50 rounded-2xl p-3 border border-rose-100 md:col-span-2">
+                                  <span className="font-black text-rose-700">
+                                    Revision Note:
+                                  </span>{" "}
+                                  {task.reviewNote}
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex gap-2 items-center flex-wrap mt-4 lg:mt-0 lg:absolute lg:right-0 lg:top-0 lg:justify-end">
+                        {isAssignedToMe &&
+                          editingTaskId !== task.id &&
+                          !isCreator &&
+                          task.status !== "WAITING_APPROVAL" &&
+                          task.status !== "DONE" && (
+                            <select
+                              value={task.status || "TODO"}
+                              onChange={(e) =>
+                                updateStatus(task.id, e.target.value)
+                              }
+                              className="border p-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300"
                             >
-                              Request Revision
+                              <option value="TODO">TODO</option>
+                              <option value="IN_PROGRESS">IN_PROGRESS</option>
+                              <option value="TEST">TEST</option>
+                            </select>
+                          )}
+
+                        {canSubmitForApproval && editingTaskId !== task.id && (
+                          <button
+                            onClick={() => updateStatus(task.id, "DONE")}
+                            className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-2xl text-sm font-bold shadow-sm"
+                          >
+                            Submit for Approval
+                          </button>
+                        )}
+
+                        {isAssignedToMe &&
+                          !isCreator &&
+                          task.status === "WAITING_APPROVAL" &&
+                          editingTaskId !== task.id && (
+                            <span className="bg-purple-50 text-purple-700 border border-purple-200 px-4 py-2 rounded-2xl text-sm font-bold">
+                              Waiting for creator approval
+                            </span>
+                          )}
+
+                        {task.status === "DONE" &&
+                          editingTaskId !== task.id && (
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-2xl text-sm font-bold">
+                              Closed / Approved
+                            </span>
+                          )}
+
+                        {isCreator &&
+                          editingTaskId !== task.id &&
+                          task.status !== "WAITING_APPROVAL" &&
+                          task.status !== "DONE" && (
+                            <select
+                              value={task.status || "TODO"}
+                              onChange={(e) =>
+                                updateStatus(task.id, e.target.value)
+                              }
+                              className="border p-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300"
+                            >
+                              <option value="TODO">TODO</option>
+                              <option value="IN_PROGRESS">IN_PROGRESS</option>
+                              <option value="TEST">TEST</option>
+                              <option value="DONE">DONE</option>
+                            </select>
+                          )}
+
+                        {canEditTask &&
+                          editingTaskId !== task.id &&
+                          task.status !== "DONE" && (
+                            <button
+                              onClick={() => startEditTask(task)}
+                              className="bg-amber-400 hover:bg-amber-500 text-white px-4 py-2 rounded-2xl text-sm font-bold shadow-sm"
+                            >
+                              Edit
+                            </button>
+                          )}
+
+                        {canDeleteTask && editingTaskId !== task.id && (
+                          <button
+                            onClick={() => deleteTask(task)}
+                            className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-2xl text-sm font-bold shadow-sm"
+                          >
+                            Delete
+                          </button>
+                        )}
+
+                        {task.status === "WAITING_APPROVAL" &&
+                          isCreator &&
+                          editingTaskId !== task.id && (
+                            <div className="w-full lg:w-72 bg-purple-50 border border-purple-100 rounded-2xl p-3 space-y-2">
+                              <p className="text-xs font-black text-purple-700">
+                                This task is waiting for your review.
+                              </p>
+
+                              <button
+                                onClick={() => approveTask(task.id)}
+                                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold"
+                              >
+                                Approve Task
+                              </button>
+
+                              <textarea
+                                className="w-full border border-rose-100 bg-white p-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-rose-300"
+                                placeholder="Write revision note..."
+                                value={rejectNote[task.id] || ""}
+                                onChange={(e) =>
+                                  setRejectNote((prev) => ({
+                                    ...prev,
+                                    [task.id]: e.target.value,
+                                  }))
+                                }
+                              />
+
+                              <button
+                                onClick={() => rejectTask(task.id)}
+                                className="w-full bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-bold"
+                              >
+                                Request Revision
+                              </button>
+                            </div>
+                          )}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 border-t border-blue-100 pt-4">
+                      <p className="text-xs font-black text-blue-900 mb-3">
+                        💭 Comments
+                      </p>
+
+                      {(comments[task.id] || []).length === 0 ? (
+                        <p className="text-xs text-blue-700/50 mb-3">
+                          No comments yet.
+                        </p>
+                      ) : (
+                        <div className="space-y-2 mb-3">
+                          {[...(comments[task.id] || [])]
+                            .sort((a, b) => b.id - a.id)
+                            .map((comment) => {
+                              const isCommentOwner =
+                                comment.authorEmail === currentEmail;
+                              const canDeleteComment =
+                                role === "ADMIN" || isCommentOwner;
+                              const canEditComment = isCommentOwner;
+
+                              return (
+                                <div
+                                  key={comment.id}
+                                  className="text-xs text-blue-800 flex justify-between gap-2 bg-blue-50 border border-blue-100 rounded-2xl p-3"
+                                >
+                                  <div className="flex-1">
+                                    <UserHoverCard
+                                      email={comment.authorEmail}
+                                    />{" "}
+                                    {editingCommentId === comment.id ? (
+                                      <input
+                                        className="border p-2 ml-1 rounded-xl w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        value={editingCommentText}
+                                        onChange={(e) =>
+                                          setEditingCommentText(e.target.value)
+                                        }
+                                      />
+                                    ) : (
+                                      <span className="whitespace-pre-wrap leading-relaxed">
+                                        {renderCommentTextWithMentions(
+                                          comment.text,
+                                        )}
+                                      </span>
+                                    )}
+                                    {comment.fileUrl && (
+                                      <div className="mt-3 rounded-2xl border border-blue-100 bg-white p-3">
+                                        {comment.fileType?.startsWith(
+                                          "image/",
+                                        ) ? (
+                                          <>
+                                            <a
+                                              href={comment.fileUrl}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="block"
+                                            >
+                                              <img
+                                                src={comment.fileUrl}
+                                                alt={
+                                                  comment.fileName ||
+                                                  "comment attachment"
+                                                }
+                                                className="max-h-56 rounded-xl border border-blue-100 object-contain"
+                                              />
+                                            </a>
+
+                                            <a
+                                              href={comment.fileUrl}
+                                              download={
+                                                comment.fileName || "image"
+                                              }
+                                              className="inline-flex items-center gap-2 mt-2 text-indigo-600 font-bold underline"
+                                            >
+                                              🖼{" "}
+                                              {comment.fileName ||
+                                                "Download image"}
+                                            </a>
+                                          </>
+                                        ) : (
+                                          <a
+                                            href={comment.fileUrl}
+                                            download={
+                                              comment.fileName || "attachment"
+                                            }
+                                            className="inline-flex items-center gap-2 text-indigo-600 font-bold underline"
+                                          >
+                                            📎{" "}
+                                            {comment.fileName ||
+                                              "Download attachment"}
+                                          </a>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex gap-2">
+                                    {canEditComment &&
+                                      editingCommentId !== comment.id && (
+                                        <button
+                                          onClick={() => {
+                                            setEditingCommentId(comment.id);
+                                            setEditingCommentText(comment.text);
+                                          }}
+                                          className="text-blue-500 font-bold"
+                                        >
+                                          Edit
+                                        </button>
+                                      )}
+
+                                    {canEditComment &&
+                                      editingCommentId === comment.id && (
+                                        <button
+                                          onClick={() => updateComment(comment)}
+                                          className="text-emerald-600 font-bold"
+                                        >
+                                          Save
+                                        </button>
+                                      )}
+
+                                    {canEditComment &&
+                                      editingCommentId === comment.id && (
+                                        <button
+                                          onClick={() => {
+                                            setEditingCommentId(null);
+                                            setEditingCommentText("");
+                                          }}
+                                          className="text-blue-700/70 font-bold"
+                                        >
+                                          Cancel
+                                        </button>
+                                      )}
+
+                                    {canDeleteComment && (
+                                      <button
+                                        onClick={() => deleteComment(comment)}
+                                        className="text-rose-500 font-bold"
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        {commentFiles[task.id] && (
+                          <div className="flex items-center justify-between gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-3 text-xs text-blue-800">
+                            <div className="min-w-0">
+                              <p className="font-black text-indigo-700">
+                                Selected attachment
+                              </p>
+                              <p className="truncate">
+                                {commentFiles[task.id].fileName}
+                              </p>
+                            </div>
+
+                            <button
+                              onClick={() => clearCommentFile(task.id)}
+                              className="shrink-0 rounded-xl bg-white px-3 py-1 font-bold text-rose-600 border border-rose-100"
+                            >
+                              Remove
                             </button>
                           </div>
                         )}
-                    </div>
-                  </div>
 
-                  <div className="mt-5 border-t border-blue-100 pt-4">
-                    <p className="text-xs font-black text-blue-900 mb-3">
-                      💭 Comments
-                    </p>
+                        <div className="relative flex gap-2 items-center">
+                          <div className="relative flex-1">
+                            <input
+                              className="border border-blue-100 bg-blue-50 p-3 text-xs w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                              placeholder="Add a comment... Use @Name to mention someone"
+                              value={newComment[task.id] || ""}
+                              onChange={(e) =>
+                                handleCommentTextChange(task.id, e.target.value)
+                              }
+                            />
 
-                    {(comments[task.id] || []).length === 0 ? (
-                      <p className="text-xs text-blue-700/50 mb-3">
-                        No comments yet.
-                      </p>
-                    ) : (
-                      <div className="space-y-2 mb-3">
-                        {[...(comments[task.id] || [])]
-                          .sort((a, b) => b.id - a.id)
-                          .map((comment) => {
-                          const isCommentOwner =
-                            comment.authorEmail === currentEmail;
-                          const canDeleteComment =
-                            role === "ADMIN" || isCommentOwner;
-                          const canEditComment = isCommentOwner;
-
-                          return (
-                            <div
-                              key={comment.id}
-                              className="text-xs text-blue-800 flex justify-between gap-2 bg-blue-50 border border-blue-100 rounded-2xl p-3"
-                            >
-                              <div className="flex-1">
-                                <UserHoverCard email={comment.authorEmail} />{" "}
-                                {editingCommentId === comment.id ? (
-                                  <input
-                                    className="border p-2 ml-1 rounded-xl w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                    value={editingCommentText}
-                                    onChange={(e) =>
-                                      setEditingCommentText(e.target.value)
-                                    }
-                                  />
-                                ) : (
-                                  <span className="whitespace-pre-wrap leading-relaxed">
-                                    {renderCommentTextWithMentions(comment.text)}
-                                  </span>
-                                )}
-
-                                {comment.fileUrl && (
-                                  <div className="mt-3 rounded-2xl border border-blue-100 bg-white p-3">
-                                    {comment.fileType?.startsWith("image/") ? (
-                                      <>
-                                        <a
-                                          href={comment.fileUrl}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="block"
-                                        >
-                                          <img
-                                            src={comment.fileUrl}
-                                            alt={comment.fileName || "comment attachment"}
-                                            className="max-h-56 rounded-xl border border-blue-100 object-contain"
-                                          />
-                                        </a>
-
-                                        <a
-                                          href={comment.fileUrl}
-                                          download={comment.fileName || "image"}
-                                          className="inline-flex items-center gap-2 mt-2 text-indigo-600 font-bold underline"
-                                        >
-                                          🖼 {comment.fileName || "Download image"}
-                                        </a>
-                                      </>
-                                    ) : (
-                                      <a
-                                        href={comment.fileUrl}
-                                        download={comment.fileName || "attachment"}
-                                        className="inline-flex items-center gap-2 text-indigo-600 font-bold underline"
-                                      >
-                                        📎 {comment.fileName || "Download attachment"}
-                                      </a>
-                                    )}
+                            {showMentionBox[task.id] &&
+                              mentionSuggestions[task.id]?.length > 0 && (
+                                <div className="absolute left-0 bottom-12 z-50 w-full max-w-sm rounded-2xl border border-indigo-100 bg-white shadow-2xl overflow-hidden">
+                                  <div className="px-3 py-2 bg-indigo-50 text-[11px] font-black text-indigo-700">
+                                    Mention teammate
                                   </div>
-                                )}
-                              </div>
 
-                              <div className="flex gap-2">
-                                {canEditComment &&
-                                  editingCommentId !== comment.id && (
-                                    <button
-                                      onClick={() => {
-                                        setEditingCommentId(comment.id);
-                                        setEditingCommentText(comment.text);
-                                      }}
-                                      className="text-blue-500 font-bold"
-                                    >
-                                      Edit
-                                    </button>
-                                  )}
+                                  <div className="max-h-56 overflow-y-auto">
+                                    {mentionSuggestions[task.id].map((user) => (
+                                      <button
+                                        key={user.email}
+                                        type="button"
+                                        onClick={() =>
+                                          selectMentionUser(task.id, user)
+                                        }
+                                        className="w-full text-left px-3 py-3 hover:bg-indigo-50 flex items-center gap-3 transition"
+                                      >
+                                        <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black overflow-hidden">
+                                          {getProfileImage(user) ? (
+                                            <img
+                                              src={getProfileImage(user)}
+                                              alt={getUserFullName(user.email)}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          ) : (
+                                            getInitials(user.email)
+                                          )}
+                                        </span>
 
-                                {canEditComment &&
-                                  editingCommentId === comment.id && (
-                                    <button
-                                      onClick={() => updateComment(comment)}
-                                      className="text-emerald-600 font-bold"
-                                    >
-                                      Save
-                                    </button>
-                                  )}
-
-                                {canEditComment &&
-                                  editingCommentId === comment.id && (
-                                    <button
-                                      onClick={() => {
-                                        setEditingCommentId(null);
-                                        setEditingCommentText("");
-                                      }}
-                                      className="text-blue-700/70 font-bold"
-                                    >
-                                      Cancel
-                                    </button>
-                                  )}
-
-                                {canDeleteComment && (
-                                  <button
-                                    onClick={() => deleteComment(comment)}
-                                    className="text-rose-500 font-bold"
-                                  >
-                                    Delete
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      {commentFiles[task.id] && (
-                        <div className="flex items-center justify-between gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-3 text-xs text-blue-800">
-                          <div className="min-w-0">
-                            <p className="font-black text-indigo-700">
-                              Selected attachment
-                            </p>
-                            <p className="truncate">
-                              {commentFiles[task.id].fileName}
-                            </p>
+                                        <span className="min-w-0">
+                                          <span className="block text-xs font-black text-blue-950 truncate">
+                                            {user.name} {user.surname}
+                                          </span>
+                                          <span className="block text-[10px] text-blue-700/50 truncate">
+                                            {user.role || "-"} •{" "}
+                                            {user.department || "-"}
+                                          </span>
+                                        </span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                           </div>
 
+                          <label className="cursor-pointer bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-100 px-4 py-3 text-xs rounded-2xl font-black shadow-sm">
+                            📎
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+                              onChange={(e) =>
+                                handleCommentFileChange(
+                                  task.id,
+                                  e.target.files?.[0] || null,
+                                )
+                              }
+                            />
+                          </label>
+
                           <button
-                            onClick={() => clearCommentFile(task.id)}
-                            className="shrink-0 rounded-xl bg-white px-3 py-1 font-bold text-rose-600 border border-rose-100"
+                            onClick={() => addComment(task.id)}
+                            className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] text-white px-5 py-2 text-xs rounded-2xl font-black shadow-md transition"
                           >
-                            Remove
+                            Add
                           </button>
                         </div>
-                      )}
-
-                      <div className="relative flex gap-2 items-center">
-                        <div className="relative flex-1">
-                          <input
-                            className="border border-blue-100 bg-blue-50 p-3 text-xs w-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                            placeholder="Add a comment... Use @Name to mention someone"
-                            value={newComment[task.id] || ""}
-                            onChange={(e) =>
-                              handleCommentTextChange(task.id, e.target.value)
-                            }
-                          />
-
-                          {showMentionBox[task.id] &&
-                            mentionSuggestions[task.id]?.length > 0 && (
-                              <div className="absolute left-0 bottom-12 z-50 w-full max-w-sm rounded-2xl border border-indigo-100 bg-white shadow-2xl overflow-hidden">
-                                <div className="px-3 py-2 bg-indigo-50 text-[11px] font-black text-indigo-700">
-                                  Mention teammate
-                                </div>
-
-                                <div className="max-h-56 overflow-y-auto">
-                                  {mentionSuggestions[task.id].map((user) => (
-                                    <button
-                                      key={user.email}
-                                      type="button"
-                                      onClick={() => selectMentionUser(task.id, user)}
-                                      className="w-full text-left px-3 py-3 hover:bg-indigo-50 flex items-center gap-3 transition"
-                                    >
-                                      <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black overflow-hidden">
-                                        {getProfileImage(user) ? (
-                                          <img
-                                            src={getProfileImage(user)}
-                                            alt={getUserFullName(user.email)}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        ) : (
-                                          getInitials(user.email)
-                                        )}
-                                      </span>
-
-                                      <span className="min-w-0">
-                                        <span className="block text-xs font-black text-blue-950 truncate">
-                                          {user.name} {user.surname}
-                                        </span>
-                                        <span className="block text-[10px] text-blue-700/50 truncate">
-                                          {user.role || "-"} • {user.department || "-"}
-                                        </span>
-                                      </span>
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                        </div>
-
-                        <label className="cursor-pointer bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-100 px-4 py-3 text-xs rounded-2xl font-black shadow-sm">
-                          📎
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
-                            onChange={(e) =>
-                              handleCommentFileChange(
-                                task.id,
-                                e.target.files?.[0] || null
-                              )
-                            }
-                          />
-                        </label>
-
-                        <button
-                          onClick={() => addComment(task.id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 text-xs rounded-2xl font-black"
-                        >
-                          Add
-                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })
           )}
         </div>
       </div>
