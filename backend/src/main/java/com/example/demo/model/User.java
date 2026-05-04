@@ -22,6 +22,9 @@ public class User {
     private String linkedin;
     private String github;
 
+    private String resetCode;
+    private String resetCodeExpire;
+
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String profileImage;
@@ -58,6 +61,12 @@ public class User {
 
     public String getGithub() { return github; }
     public void setGithub(String github) { this.github = github; }
+
+    public String getResetCode() { return resetCode; }
+    public void setResetCode(String resetCode) { this.resetCode = resetCode; }
+
+    public String getResetCodeExpire() { return resetCodeExpire; }
+    public void setResetCodeExpire(String resetCodeExpire) { this.resetCodeExpire = resetCodeExpire; }
 
     public String getProfileImage() { return profileImage; }
     public void setProfileImage(String profileImage) { this.profileImage = profileImage; }

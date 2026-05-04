@@ -89,4 +89,23 @@ public class EmailService {
                 "Your role has been changed to: " + role
         );
     }
+
+    // 🔐 PASSWORD RESET CODE
+    public void sendPasswordResetCodeEmail(String to, String code) {
+        sendEmail(
+                to,
+                "Password Reset Code",
+                "Your password reset verification code is: " + code
+                        + "\n\nThis code is valid for 10 minutes."
+        );
+    }
+
+    // 🔐 PASSWORD CHANGED
+    public void sendPasswordChangedEmail(String to) {
+        sendEmail(
+                to,
+                "Password Changed",
+                "Your password has been changed successfully."
+        );
+    }
 }

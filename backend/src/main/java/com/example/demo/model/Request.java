@@ -19,6 +19,15 @@ public class Request {
     private String createdBy;
     private String receiverEmail;
 
+    private Long projectId;
+    private Long taskId;
+
+    @Column(length = 1000)
+    private String requestedValue;
+
+    private String reviewedBy;
+    private String reviewedAt;
+
     public Long getId() { return id; }
 
     public String getType() { return type; }
@@ -35,4 +44,19 @@ public class Request {
 
     public String getReceiverEmail() { return receiverEmail; }
     public void setReceiverEmail(String receiverEmail) { this.receiverEmail = receiverEmail; }
+
+    public Long getProjectId() { return projectId; }
+    public void setProjectId(Long projectId) { this.projectId = projectId; }
+
+    public Long getTaskId() { return taskId; }
+    public void setTaskId(Long taskId) { this.taskId = taskId; }
+
+    public String getRequestedValue() { return requestedValue; }
+    public void setRequestedValue(String requestedValue) { this.requestedValue = requestedValue; }
+
+    public String getReviewedBy() { return reviewedBy; }
+    public void setReviewedBy(String reviewedBy) { this.reviewedBy = reviewedBy; }
+
+    public String getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(String reviewedAt) { this.reviewedAt = reviewedAt; }
 }

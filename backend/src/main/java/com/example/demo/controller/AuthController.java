@@ -4,12 +4,16 @@ import com.example.demo.dto.LoginRequest;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtUtil;
+import com.example.demo.service.EmailService;
+import com.example.demo.util.PasswordValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -22,11 +26,18 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private EmailService emailService;
+
     @PostMapping("/register")
     public String register(@RequestBody User user) {
 
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             return "Bu email zaten kayıtlı";
+        }
+
+        if (!PasswordValidator.isValid(user.getPassword(), user.getName(), user.getSurname())) {
+            return "Şifre kurallara uymuyor";
         }
 
         if ("admin@test.com".equals(user.getEmail())) {
@@ -49,6 +60,14 @@ public class AuthController {
 
         if (user.getProfileImage() == null) {
             user.setProfileImage("");
+        }
+
+        if (user.getResetCode() == null) {
+            user.setResetCode("");
+        }
+
+        if (user.getResetCodeExpire() == null) {
+            user.setResetCodeExpire("");
         }
 
         userRepository.save(user);
@@ -78,6 +97,158 @@ public class AuthController {
                 "email", user.getEmail(),
                 "role", user.getRole()
         );
+    }
+
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@RequestParam String email) {
+
+        Optional<User> foundUser = userRepository.findByEmail(email);
+
+        if (foundUser.isEmpty()) {
+            return "Kullanıcı bulunamadı";
+        }
+
+        User user = foundUser.get();
+
+        String code = String.valueOf(new Random().nextInt(900000) + 100000);
+
+        user.setResetCode(code);
+        user.setResetCodeExpire(LocalDateTime.now().plusMinutes(10).toString());
+
+        userRepository.save(user);
+
+        emailService.sendEmail(
+                user.getEmail(),
+                "Password Reset Code",
+                "Hello " + (user.getName() == null ? "" : user.getName()) + ",\n\n"
+                        + "Your password reset verification code is: " + code + "\n\n"
+                        + "This code is valid for 10 minutes."
+        );
+
+        return "Kod email adresine gönderildi";
+    }
+
+    @PostMapping("/verify-reset-code")
+    public String verifyResetCode(
+            @RequestParam String email,
+            @RequestParam String code
+    ) {
+
+        Optional<User> foundUser = userRepository.findByEmail(email);
+
+        if (foundUser.isEmpty()) {
+            return "Kullanıcı bulunamadı";
+        }
+
+        User user = foundUser.get();
+
+        if (user.getResetCode() == null || user.getResetCode().isEmpty()) {
+            return "Kod bulunamadı";
+        }
+
+        if (!user.getResetCode().equals(code)) {
+            return "Kod yanlış";
+        }
+
+        if (user.getResetCodeExpire() == null || user.getResetCodeExpire().isEmpty()) {
+            return "Kod süresi bulunamadı";
+        }
+
+        LocalDateTime expireTime = LocalDateTime.parse(user.getResetCodeExpire());
+
+        if (LocalDateTime.now().isAfter(expireTime)) {
+            return "Kodun süresi doldu";
+        }
+
+        return "Kod doğrulandı";
+    }
+
+    @PostMapping("/reset-password")
+    public String resetPassword(
+            @RequestParam String email,
+            @RequestParam String code,
+            @RequestParam String newPassword
+    ) {
+
+        Optional<User> foundUser = userRepository.findByEmail(email);
+
+        if (foundUser.isEmpty()) {
+            return "Kullanıcı bulunamadı";
+        }
+
+        User user = foundUser.get();
+
+        if (user.getResetCode() == null || user.getResetCode().isEmpty()) {
+            return "Kod bulunamadı";
+        }
+
+        if (!user.getResetCode().equals(code)) {
+            return "Kod yanlış";
+        }
+
+        if (user.getResetCodeExpire() == null || user.getResetCodeExpire().isEmpty()) {
+            return "Kod süresi bulunamadı";
+        }
+
+        LocalDateTime expireTime = LocalDateTime.parse(user.getResetCodeExpire());
+
+        if (LocalDateTime.now().isAfter(expireTime)) {
+            return "Kodun süresi doldu";
+        }
+
+        if (!PasswordValidator.isValid(newPassword, user.getName(), user.getSurname())) {
+            return "Şifre kurallara uymuyor";
+        }
+
+        user.setPassword(newPassword);
+        user.setResetCode("");
+        user.setResetCodeExpire("");
+
+        userRepository.save(user);
+
+        emailService.sendEmail(
+                user.getEmail(),
+                "Password Changed",
+                "Your password has been changed successfully."
+        );
+
+        return "Şifre başarıyla güncellendi";
+    }
+
+    @PostMapping("/change-password")
+    public String changePassword(
+            @RequestParam String email,
+            @RequestParam String oldPassword,
+            @RequestParam String newPassword
+    ) {
+
+        Optional<User> foundUser = userRepository.findByEmail(email);
+
+        if (foundUser.isEmpty()) {
+            return "Kullanıcı bulunamadı";
+        }
+
+        User user = foundUser.get();
+
+        if (!user.getPassword().equals(oldPassword)) {
+            return "Eski şifre yanlış";
+        }
+
+        if (!PasswordValidator.isValid(newPassword, user.getName(), user.getSurname())) {
+            return "Şifre kurallara uymuyor";
+        }
+
+        user.setPassword(newPassword);
+
+        userRepository.save(user);
+
+        emailService.sendEmail(
+                user.getEmail(),
+                "Password Changed",
+                "Your password has been changed from your profile."
+        );
+
+        return "Şifre başarıyla değiştirildi";
     }
 
     @GetMapping("/me/{email}")

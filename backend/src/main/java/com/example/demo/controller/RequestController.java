@@ -1,18 +1,27 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Notification;
+import com.example.demo.model.Project;
 import com.example.demo.model.Request;
 import com.example.demo.model.Task;
 import com.example.demo.model.User;
+import com.example.demo.model.ActivityLog;
 import com.example.demo.repository.NotificationRepository;
+import com.example.demo.repository.ProjectRepository;
 import com.example.demo.repository.RequestRepository;
 import com.example.demo.repository.TaskRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.ActivityLogRepository;
+import com.example.demo.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/requests")
@@ -31,32 +40,61 @@ public class RequestController {
     @Autowired
     private TaskRepository taskRepository;
 
-    // ✅ SADECE BURASI DEĞİŞTİ
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    private void logRequestActivity(String action, Request request, String actorEmail, String message) {
+        if (request == null) return;
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setType("REQUEST");
+        activityLog.setTargetId(request.getId());
+        activityLog.setAction(action);
+        activityLog.setActorEmail(actorEmail == null ? "system" : actorEmail);
+        activityLog.setMessage(message);
+        activityLog.setCreatedAt(LocalDateTime.now().toString());
+
+        activityLogRepository.save(activityLog);
+    }
+
     @PostMapping
     public Request createRequest(@RequestBody Request request) {
         request.setStatus("PENDING");
 
-        // 🔥 GÖNDERENİ BUL
         User requester = userRepository.findByEmail(request.getCreatedBy())
                 .orElseThrow(() -> new RuntimeException("Requester not found"));
 
         String department = requester.getDepartment();
 
-        // 🔥 AYNI DEPARTMAN MANAGER
-        User manager = userRepository
-                .findFirstByRoleAndDepartment("MANAGER", department)
-                .orElseThrow(() -> new RuntimeException("No manager found for department"));
+        if (request.getReceiverEmail() == null || request.getReceiverEmail().trim().isEmpty()) {
+            User manager = userRepository
+                    .findFirstByRoleAndDepartment("MANAGER", department)
+                    .orElseThrow(() -> new RuntimeException("No manager found for department"));
 
-        request.setReceiverEmail(manager.getEmail());
+            request.setReceiverEmail(manager.getEmail());
+        }
 
         Request savedRequest = requestRepository.save(request);
+
+        logRequestActivity(
+                "REQUEST_CREATED",
+                savedRequest,
+                savedRequest.getCreatedBy(),
+                "Request created: " + savedRequest.getType()
+        );
 
         notifyUser(
                 savedRequest.getReceiverEmail(),
                 "New Request Submitted",
                 "A new request has been submitted by " + savedRequest.getCreatedBy(),
-                "REQUEST_CREATED",
-                null
+                getRequestNotificationType(savedRequest),
+                savedRequest.getTaskId()
         );
 
         return savedRequest;
@@ -67,12 +105,33 @@ public class RequestController {
         return requestRepository.findAll();
     }
 
+    @GetMapping("/created/{email}")
+    public List<Request> getRequestsCreatedByUser(@PathVariable String email) {
+        return requestRepository.findByCreatedByOrderByIdDesc(email);
+    }
+
+    @GetMapping("/received/{email}")
+    public List<Request> getRequestsReceivedByUser(@PathVariable String email) {
+        return requestRepository.findByReceiverEmailOrderByIdDesc(email);
+    }
+
+    @GetMapping("/pending")
+    public List<Request> getPendingRequests() {
+        return requestRepository.findByStatusOrderByIdDesc("PENDING");
+    }
+
     @PutMapping("/{id}")
     public Request updateStatus(@PathVariable Long id, @RequestBody Request updated) {
         Request req = requestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
         req.setStatus(updated.getStatus());
+
+        if (updated.getReviewedBy() != null && !updated.getReviewedBy().trim().isEmpty()) {
+            req.setReviewedBy(updated.getReviewedBy());
+        }
+
+        req.setReviewedAt(LocalDateTime.now().toString());
 
         if ("APPROVED".equals(updated.getStatus()) && "ROLE_CHANGE".equals(req.getType())) {
             applyRoleChange(req);
@@ -86,7 +145,34 @@ public class RequestController {
             applyDeadlineExtension(req);
         }
 
+        if ("APPROVED".equals(updated.getStatus()) && "PROJECT_JOIN".equals(req.getType())) {
+            applyProjectJoin(req);
+        }
+
+        if ("APPROVED".equals(updated.getStatus()) && "PROJECT_LEAVE".equals(req.getType())) {
+            applyProjectLeave(req);
+        }
+
+        if ("APPROVED".equals(updated.getStatus()) && "PROJECT_UPDATE".equals(req.getType())) {
+            applyProjectUpdate(req);
+        }
+
+        if ("APPROVED".equals(updated.getStatus()) && "PROJECT_DEADLINE".equals(req.getType())) {
+            applyProjectDeadline(req);
+        }
+
+        if ("APPROVED".equals(updated.getStatus()) && "KANBAN_APPROVAL".equals(req.getType())) {
+            applyKanbanApproval(req);
+        }
+
         Request savedRequest = requestRepository.save(req);
+
+        logRequestActivity(
+                "REQUEST_" + updated.getStatus(),
+                savedRequest,
+                savedRequest.getReviewedBy(),
+                "Request " + updated.getStatus().toLowerCase() + ": " + savedRequest.getType()
+        );
 
         if ("APPROVED".equals(updated.getStatus())) {
             notifyUser(
@@ -94,7 +180,7 @@ public class RequestController {
                     "Request Approved",
                     "Your request has been approved.",
                     "REQUEST_APPROVED",
-                    null
+                    req.getTaskId()
             );
         }
 
@@ -104,7 +190,7 @@ public class RequestController {
                     "Request Rejected",
                     "Your request has been rejected.",
                     "REQUEST_REJECTED",
-                    null
+                    req.getTaskId()
             );
         }
 
@@ -122,6 +208,9 @@ public class RequestController {
 
         req.setType(updated.getType());
         req.setDescription(updated.getDescription());
+        req.setProjectId(updated.getProjectId());
+        req.setTaskId(updated.getTaskId());
+        req.setRequestedValue(updated.getRequestedValue());
 
         return requestRepository.save(req);
     }
@@ -139,70 +228,339 @@ public class RequestController {
         return "Request deleted";
     }
 
+    private boolean shouldSendRequestEmail(String type) {
+        if (type == null) return false;
+
+        return "REQUEST_APPROVED".equals(type)
+                || "REQUEST_REJECTED".equals(type)
+                || "ROLE_CHANGE".equals(type)
+                || "TEAM_CHANGE".equals(type);
+    }
+
     private void applyRoleChange(Request req) {
-        String description = req.getDescription();
+        String requestedRole = req.getRequestedValue();
 
-        if (description == null || !description.contains("Requested Role:")) {
-            throw new RuntimeException("Requested role not found in description");
+        if (requestedRole == null || requestedRole.trim().isEmpty()) {
+            String description = req.getDescription();
+
+            if (description == null || !description.contains("Requested Role:")) {
+                throw new RuntimeException("Requested role not found in request");
+            }
+
+            requestedRole = description
+                    .split("Requested Role:")[1]
+                    .split("\\n")[0]
+                    .trim();
         }
-
-        String requestedRole = description
-                .split("Requested Role:")[1]
-                .split("\\n")[0]
-                .trim();
 
         User user = userRepository.findByEmail(req.getCreatedBy())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setRole(requestedRole);
         userRepository.save(user);
+
+        notifyUser(
+                user.getEmail(),
+                "Role Updated",
+                "Your role has been changed to: " + requestedRole,
+                "ROLE_CHANGE",
+                null
+        );
     }
 
     private void applyTeamChange(Request req) {
-        String description = req.getDescription();
+        String requestedTeam = req.getRequestedValue();
 
-        if (description == null || !description.contains("Requested Team:")) {
-            throw new RuntimeException("Requested team not found in description");
+        if (requestedTeam == null || requestedTeam.trim().isEmpty()) {
+            String description = req.getDescription();
+
+            if (description == null || !description.contains("Requested Team:")) {
+                throw new RuntimeException("Requested team not found in request");
+            }
+
+            requestedTeam = description
+                    .split("Requested Team:")[1]
+                    .split("\\n")[0]
+                    .trim();
         }
-
-        String requestedTeam = description
-                .split("Requested Team:")[1]
-                .split("\\n")[0]
-                .trim();
 
         User user = userRepository.findByEmail(req.getCreatedBy())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setDepartment(requestedTeam);
         userRepository.save(user);
+
+        notifyUser(
+                user.getEmail(),
+                "Team Updated",
+                "Your department/team has been changed to: " + requestedTeam,
+                "TEAM_CHANGE",
+                null
+        );
     }
 
     private void applyDeadlineExtension(Request req) {
-        String description = req.getDescription();
+        Long taskId = req.getTaskId();
+        String newDeadline = req.getRequestedValue();
 
-        if (description == null ||
-                !description.contains("Task Info:") ||
-                !description.contains("Requested Deadline:")) {
-            throw new RuntimeException("Invalid deadline extension request format");
+        if (taskId == null || newDeadline == null || newDeadline.trim().isEmpty()) {
+            String description = req.getDescription();
+
+            if (description == null ||
+                    !description.contains("Task Info:") ||
+                    !description.contains("Requested Deadline:")) {
+                throw new RuntimeException("Invalid deadline extension request format");
+            }
+
+            taskId = Long.parseLong(
+                    description
+                            .split("Task Info:")[1]
+                            .split("\\n")[0]
+                            .trim()
+            );
+
+            newDeadline = description
+                    .split("Requested Deadline:")[1]
+                    .split("\\n")[0]
+                    .trim();
         }
-
-        Long taskId = Long.parseLong(
-                description
-                        .split("Task Info:")[1]
-                        .split("\\n")[0]
-                        .trim()
-        );
-
-        String newDeadline = description
-                .split("Requested Deadline:")[1]
-                .split("\\n")[0]
-                .trim();
 
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
 
         task.setDueDate(newDeadline);
         taskRepository.save(task);
+
+        notifyAssignedTaskUsers(
+                task,
+                "Task Deadline Updated",
+                "Deadline for task \"" + task.getTitle() + "\" has been changed to: " + newDeadline,
+                "TASK_UPDATED"
+        );
+    }
+
+    private void applyProjectJoin(Request req) {
+        Long projectId = getProjectIdFromRequest(req);
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        List<String> members = cleanMemberEmails(project.getMemberEmails());
+
+        if (!members.contains(req.getCreatedBy())) {
+            members.add(req.getCreatedBy());
+        }
+
+        project.setMemberEmails(members);
+        projectRepository.save(project);
+
+        notifyUser(
+                req.getCreatedBy(),
+                "Joined Project",
+                "You have been added to project: " + project.getName(),
+                "PROJECT_ASSIGNED",
+                null
+        );
+    }
+
+    private void applyProjectLeave(Request req) {
+        Long projectId = getProjectIdFromRequest(req);
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        List<String> members = cleanMemberEmails(project.getMemberEmails());
+
+        members.remove(req.getCreatedBy());
+
+        project.setMemberEmails(members);
+        projectRepository.save(project);
+
+        notifyUser(
+                req.getCreatedBy(),
+                "Left Project",
+                "You have been removed from project: " + project.getName(),
+                "PROJECT_UPDATED",
+                null
+        );
+    }
+
+    private void applyProjectUpdate(Request req) {
+        Long projectId = getProjectIdFromRequest(req);
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        String requestedValue = req.getRequestedValue();
+
+        if (requestedValue != null && requestedValue.contains("Status:")) {
+            String status = requestedValue
+                    .split("Status:")[1]
+                    .split("\\n")[0]
+                    .trim();
+
+            project.setStatus(status);
+        }
+
+        if (requestedValue != null && requestedValue.contains("Description:")) {
+            String description = requestedValue
+                    .split("Description:")[1]
+                    .split("\\n")[0]
+                    .trim();
+
+            project.setDescription(description);
+        }
+
+        projectRepository.save(project);
+
+        notifyProjectMembers(
+                project,
+                "Project Updated",
+                "Project was updated: " + project.getName(),
+                "PROJECT_UPDATED"
+        );
+    }
+
+    private void applyProjectDeadline(Request req) {
+        Long projectId = getProjectIdFromRequest(req);
+        String newDeadline = req.getRequestedValue();
+
+        if (newDeadline == null || newDeadline.trim().isEmpty()) {
+            String description = req.getDescription();
+
+            if (description == null || !description.contains("New Deadline:")) {
+                throw new RuntimeException("New deadline not found in request");
+            }
+
+            newDeadline = description
+                    .split("New Deadline:")[1]
+                    .split("\\n")[0]
+                    .trim();
+        }
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        project.setEndDate(LocalDate.parse(newDeadline));
+        projectRepository.save(project);
+
+        notifyProjectMembers(
+                project,
+                "Project Deadline Updated",
+                "Deadline for project \"" + project.getName() + "\" has been changed to: " + newDeadline,
+                "PROJECT_UPDATED"
+        );
+    }
+
+    private void applyKanbanApproval(Request req) {
+        Long taskId = req.getTaskId();
+
+        if (taskId == null) {
+            String description = req.getDescription();
+
+            if (description == null || !description.contains("Task:")) {
+                throw new RuntimeException("Task id not found in request");
+            }
+
+            taskId = Long.parseLong(
+                    description
+                            .split("Task:")[1]
+                            .split("\\n")[0]
+                            .trim()
+            );
+        }
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        task.setStatus("DONE");
+        task.setApprovedBy(req.getReviewedBy());
+        task.setApprovedAt(LocalDateTime.now().toString());
+        task.setReviewNote("");
+
+        taskRepository.save(task);
+
+        notifyAssignedTaskUsers(
+                task,
+                "Task Approved",
+                "Your task \"" + task.getTitle() + "\" has been approved.",
+                "TASK_APPROVED"
+        );
+    }
+
+    private Long getProjectIdFromRequest(Request req) {
+        if (req.getProjectId() != null) {
+            return req.getProjectId();
+        }
+
+        String description = req.getDescription();
+
+        if (description == null || !description.contains("Project:")) {
+            throw new RuntimeException("Project id not found in request");
+        }
+
+        return Long.parseLong(
+                description
+                        .split("Project:")[1]
+                        .split("\\n")[0]
+                        .trim()
+        );
+    }
+
+    private List<String> cleanMemberEmails(List<String> emails) {
+        Set<String> cleanEmails = new LinkedHashSet<>();
+
+        if (emails == null) {
+            return new ArrayList<>();
+        }
+
+        for (String email : emails) {
+            if (email == null) continue;
+
+            String cleanEmail = email.trim();
+
+            if (!cleanEmail.isEmpty()) {
+                cleanEmails.add(cleanEmail);
+            }
+        }
+
+        return new ArrayList<>(cleanEmails);
+    }
+
+    private void notifyProjectMembers(Project project, String title, String message, String type) {
+        if (project.getMemberEmails() == null) return;
+
+        for (String email : project.getMemberEmails()) {
+            notifyUser(email, title, message, type, null);
+        }
+    }
+
+    private void notifyAssignedTaskUsers(Task task, String title, String message, String type) {
+        if (task.getAssignedTo() == null || task.getAssignedTo().trim().isEmpty()) {
+            return;
+        }
+
+        String[] emails = task.getAssignedTo().split(",");
+
+        for (String email : emails) {
+            notifyUser(email, title, message, type, task.getId());
+        }
+    }
+
+    private String getRequestNotificationType(Request request) {
+        if (request.getType() == null) {
+            return "REQUEST_CREATED";
+        }
+
+        if (request.getType().startsWith("PROJECT")) {
+            return "PROJECT_REQUEST";
+        }
+
+        if (request.getType().startsWith("KANBAN")) {
+            return "KANBAN_REQUEST";
+        }
+
+        return "REQUEST_CREATED";
     }
 
     private void notifyUser(String email, String title, String message, String type, Long taskId) {
@@ -218,5 +576,9 @@ public class RequestController {
         notification.setCreatedAt(LocalDateTime.now().toString());
 
         notificationRepository.save(notification);
+
+        if (shouldSendRequestEmail(type)) {
+            emailService.sendEmail(email.trim(), title, message);
+        }
     }
 }

@@ -16,6 +16,11 @@ public class Project {
     private String name;
     private String description;
 
+    private String githubUrl;
+
+    // 🔥 EKLENDİ (EN KRİTİK)
+    private String createdBy;
+
     private String status = "Active";
 
     private LocalDate startDate;
@@ -47,6 +52,23 @@ public class Project {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getGithubUrl() {
+        return githubUrl;
+    }
+
+    public void setGithubUrl(String githubUrl) {
+        this.githubUrl = githubUrl;
+    }
+
+    // 🔥 GETTER / SETTER
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 
     public String getStatus() {

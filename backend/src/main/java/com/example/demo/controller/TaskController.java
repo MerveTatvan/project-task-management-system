@@ -3,9 +3,13 @@ package com.example.demo.controller;
 import jakarta.transaction.Transactional;
 import com.example.demo.model.Task;
 import com.example.demo.model.Notification;
+import com.example.demo.model.User;
+import com.example.demo.model.ActivityLog;
 import com.example.demo.repository.TaskRepository;
 import com.example.demo.repository.CommentRepository;
 import com.example.demo.repository.NotificationRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.ActivityLogRepository;
 import com.example.demo.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +35,26 @@ public class TaskController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    private void logTaskActivity(String action, Task task, String actorEmail, String message) {
+        if (task == null) return;
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setType("TASK");
+        activityLog.setTargetId(task.getId());
+        activityLog.setAction(action);
+        activityLog.setActorEmail(actorEmail == null ? "system" : actorEmail);
+        activityLog.setMessage(message);
+        activityLog.setCreatedAt(LocalDateTime.now().toString());
+
+        activityLogRepository.save(activityLog);
+    }
+
     // 🔔 TEK NOKTADAN BİLDİRİM + MAİL
     private void notifyUser(String email, String title, String message, String type, Long taskId) {
         if (email == null || email.trim().isEmpty()) return;
@@ -46,8 +70,95 @@ public class TaskController {
 
         notificationRepository.save(n);
 
-        // 📩 mail
-        emailService.sendEmail(email.trim(), title, message);
+        // 📩 Mail sadece önemli durumlarda gönderilir.
+        if (shouldSendTaskEmail(type)) {
+            emailService.sendEmail(email.trim(), title, message);
+        }
+    }
+
+    private boolean shouldSendTaskEmail(String type) {
+        if (type == null) return false;
+
+        return "TASK_ASSIGNED".equals(type)
+                || "TASK_REVIEW".equals(type)
+                || "TASK_APPROVED".equals(type)
+                || "TASK_REJECTED".equals(type)
+                || "DEADLINE".equals(type);
+    }
+
+    private User getUserByEmailOrThrow(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("User email is required");
+        }
+
+        return userRepository.findByEmail(email.trim())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    private boolean isAdmin(User user) {
+        return user != null && "ADMIN".equals(user.getRole());
+    }
+
+    private boolean isTaskCreator(Task task, String email) {
+        return task.getCreatedBy() != null &&
+                email != null &&
+                task.getCreatedBy().trim().equalsIgnoreCase(email.trim());
+    }
+
+    private boolean isTaskAssignedToUser(Task task, String email) {
+        if (task.getAssignedTo() == null || email == null) {
+            return false;
+        }
+
+        String cleanEmail = email.trim().toLowerCase();
+
+        String[] assignedEmails = task.getAssignedTo().split(",");
+
+        for (String assignedEmail : assignedEmails) {
+            if (assignedEmail.trim().toLowerCase().equals(cleanEmail)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void validateTaskUpdatePermission(Task task, String userEmail) {
+        User user = getUserByEmailOrThrow(userEmail);
+
+        boolean allowed =
+                isAdmin(user) ||
+                isTaskCreator(task, userEmail) ||
+                isTaskAssignedToUser(task, userEmail);
+
+        if (!allowed) {
+            throw new RuntimeException("Only task creator, assigned user or admin can update this task");
+        }
+    }
+
+    private void validateTaskDeletePermission(Task task, String userEmail) {
+        User user = getUserByEmailOrThrow(userEmail);
+
+        boolean allowed =
+                isAdmin(user) ||
+                isTaskCreator(task, userEmail);
+
+        if (!allowed) {
+            throw new RuntimeException("Only task creator or admin can delete this task");
+        }
+    }
+
+    private void validateTaskStatusPermission(Task task, String userEmail) {
+        User user = getUserByEmailOrThrow(userEmail);
+
+        boolean allowed =
+                isAdmin(user) ||
+                isTaskCreator(task, userEmail) ||
+                isTaskAssignedToUser(task, userEmail);
+
+        if (!allowed) {
+            throw new RuntimeException("Only task creator, assigned user or admin can update task status");
+        }
     }
 
     @PostMapping
@@ -65,6 +176,13 @@ public class TaskController {
         }
 
         Task savedTask = taskRepository.save(task);
+
+        logTaskActivity(
+                "TASK_CREATED",
+                savedTask,
+                savedTask.getCreatedBy(),
+                "Task created: " + savedTask.getTitle()
+        );
 
         // 🔥 TASK ATANINCA BİLDİRİM
         if (savedTask.getAssignedTo() != null) {
@@ -113,6 +231,8 @@ public class TaskController {
 
         Task task = optionalTask.get();
 
+        validateTaskStatusPermission(task, userEmail);
+
         if ("DONE".equals(status)) {
             task.setStatus("WAITING_APPROVAL");
             task.setCompletedBy(userEmail);
@@ -121,6 +241,13 @@ public class TaskController {
             task.setApprovedAt(null);
 
             taskRepository.save(task);
+
+            logTaskActivity(
+                    "TASK_SUBMITTED_FOR_REVIEW",
+                    task,
+                    userEmail,
+                    "Task submitted for review: " + task.getTitle()
+            );
 
             // 🔥 CREATOR'A BİLDİRİM
             notifyUser(
@@ -136,6 +263,13 @@ public class TaskController {
 
         task.setStatus(status);
         taskRepository.save(task);
+
+        logTaskActivity(
+                "TASK_STATUS_UPDATED",
+                task,
+                userEmail,
+                "Task status updated to " + status + ": " + task.getTitle()
+        );
 
         return "Task status updated";
     }
@@ -167,6 +301,13 @@ public class TaskController {
         task.setReviewNote("");
 
         taskRepository.save(task);
+
+        logTaskActivity(
+                "TASK_APPROVED",
+                task,
+                reviewerEmail,
+                "Task approved: " + task.getTitle()
+        );
 
         // 🔥 YAPAN KİŞİYE BİLDİRİM
         if (task.getAssignedTo() != null) {
@@ -213,6 +354,13 @@ public class TaskController {
 
         taskRepository.save(task);
 
+        logTaskActivity(
+                "TASK_REVISION_REQUESTED",
+                task,
+                reviewerEmail,
+                "Revision requested for task: " + task.getTitle()
+        );
+
         // 🔥 REVİZE BİLDİRİMİ
         if (task.getAssignedTo() != null) {
             for (String e : task.getAssignedTo().split(",")) {
@@ -230,9 +378,15 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public Task updateTask(@PathVariable Long id, @RequestBody Task updatedTask) {
+    public Task updateTask(
+            @PathVariable Long id,
+            @RequestBody Task updatedTask,
+            @RequestParam(required = false) String userEmail
+    ) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        validateTaskUpdatePermission(task, userEmail);
 
         task.setTitle(updatedTask.getTitle());
         task.setDescription(updatedTask.getDescription());
@@ -244,15 +398,39 @@ public class TaskController {
             task.setReviewNote(updatedTask.getReviewNote());
         }
 
-        return taskRepository.save(task);
+        Task savedTask = taskRepository.save(task);
+
+        logTaskActivity(
+                "TASK_UPDATED",
+                savedTask,
+                userEmail,
+                "Task updated: " + savedTask.getTitle()
+        );
+
+        return savedTask;
     }
 
     @Transactional
     @DeleteMapping("/{id}")
-    public String deleteTask(@PathVariable Long id) {
+    public String deleteTask(
+            @PathVariable Long id,
+            @RequestParam(required = false) String userEmail
+    ) {
         if (!taskRepository.existsById(id)) {
             return "Task not found";
         }
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        validateTaskDeletePermission(task, userEmail);
+
+        logTaskActivity(
+                "TASK_DELETED",
+                task,
+                userEmail,
+                "Task deleted: " + task.getTitle()
+        );
 
         commentRepository.deleteByTaskId(id);
         taskRepository.deleteById(id);
