@@ -1,57 +1,386 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function RegisterPage() {
+export default function LoginPage() {
+  const [isRegister, setIsRegister] = useState(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
 
-  const handleRegister = async () => {
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [department, setDepartment] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const router = useRouter();
+
+  const passwordRules = {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*]/.test(password),
+    noName:
+      password.length === 0 ||
+      ((!name || !password.toLowerCase().includes(name.toLowerCase())) &&
+        (!surname || !password.toLowerCase().includes(surname.toLowerCase()))),
+  };
+
+  const isPasswordValid =
+    passwordRules.length &&
+    passwordRules.upper &&
+    passwordRules.lower &&
+    passwordRules.number &&
+    passwordRules.special &&
+    passwordRules.noName;
+
+  const passwordsMatch =
+    confirmPassword.length > 0 && password === confirmPassword;
+
+  const login = async () => {
+    setLoading(true);
+    setMessage("");
+    setIsSuccess(false);
+
+    if (!email.trim() || !password.trim()) {
+      setMessage("Please enter email and password");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
-      if (res.ok) {
-        setMessage("Kullanıcı oluşturuldu ✅");
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("email", data.email);
+        router.push("/dashboard");
       } else {
-        setMessage(data.message);
+        setMessage("Login failed");
       }
-    } catch (err) {
-      setMessage("Bir hata oluştu ❌");
+    } catch {
+      setMessage("Server error");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const register = async () => {
+    setLoading(true);
+    setMessage("");
+    setIsSuccess(false);
+
+    if (
+      !name.trim() ||
+      !surname.trim() ||
+      !birthDate.trim() ||
+      !department.trim() ||
+      !email.trim() ||
+      !password.trim() ||
+      !confirmPassword.trim()
+    ) {
+      setMessage("Please fill in all fields");
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setMessage("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    if (!isPasswordValid) {
+      setMessage("Password does not meet the requirements");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          surname,
+          birthDate,
+          department,
+          email,
+          password,
+        }),
+      });
+
+      const text = await res.text();
+
+      if (!res.ok || text.includes("zaten")) {
+        setMessage(text || "Register failed");
+        return;
+      }
+
+      setMessage(text || "Registered successfully. You can login now.");
+      setIsSuccess(true);
+      setIsRegister(false);
+
+      setName("");
+      setSurname("");
+      setBirthDate("");
+      setDepartment("");
+      setPassword("");
+      setConfirmPassword("");
+    } catch {
+      setMessage("Register error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const Rule = ({ ok, text }: { ok: boolean; text: string }) => (
+    <p className={`text-xs ${ok ? "text-emerald-600" : "text-red-500"}`}>
+      {ok ? "✓" : "•"} {text}
+    </p>
+  );
+
   return (
-    <div style={{ padding: "40px" }}>
-      <h1>Register</h1>
+    <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-slate-950 px-4 py-8">
+      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-30" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/95 to-blue-950/95" />
 
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <br /><br />
+      <div className="absolute left-10 top-10 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
+      <div className="absolute bottom-10 right-10 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <br /><br />
+      <div className="relative z-10 grid w-full max-w-6xl overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl lg:grid-cols-2">
+        <div className="hidden flex-col justify-between bg-gradient-to-br from-blue-600/80 to-cyan-500/60 p-10 text-white lg:flex">
+          <div>
+            <div className="mb-8 inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur">
+              Project & Task Management System
+            </div>
 
-      <button onClick={handleRegister}>Üye Ol</button>
+            <h2 className="text-4xl font-bold leading-tight">
+              Plan projects, assign tasks and follow your team progress.
+            </h2>
 
-      <p>{message}</p>
+            <p className="mt-5 text-sm leading-6 text-blue-50">
+              A modern task management platform for admins, managers and team
+              members. Track responsibilities, organize teams and manage work
+              from one clean dashboard.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="rounded-2xl bg-white/15 p-4 backdrop-blur">
+              <p className="text-2xl font-bold">Task</p>
+              <p className="text-xs text-blue-50">Tracking</p>
+            </div>
+
+            <div className="rounded-2xl bg-white/15 p-4 backdrop-blur">
+              <p className="text-2xl font-bold">Team</p>
+              <p className="text-xs text-blue-50">Management</p>
+            </div>
+
+            <div className="rounded-2xl bg-white/15 p-4 backdrop-blur">
+              <p className="text-2xl font-bold">Smart</p>
+              <p className="text-xs text-blue-50">Workflow</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/95 p-6 sm:p-8 lg:p-10">
+          <div className="mb-7 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-2xl text-white shadow-lg">
+              {isRegister ? "＋" : "✓"}
+            </div>
+
+            <h1 className="text-3xl font-bold text-slate-900">
+              {isRegister ? "Create Account" : "Welcome Back"}
+            </h1>
+
+            <p className="mt-2 text-sm text-slate-500">
+              {isRegister
+                ? "Create your account to join the project system."
+                : "Login to continue to your dashboard."}
+            </p>
+          </div>
+
+          {message && (
+            <p
+              className={`mb-4 rounded-xl px-4 py-3 text-center text-sm font-medium ${
+                isSuccess
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-red-50 text-red-600"
+              }`}
+            >
+              {message}
+            </p>
+          )}
+
+          <div className="space-y-4">
+            {isRegister && (
+              <>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    placeholder="First Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    placeholder="Last Name"
+                    value={surname}
+                    onChange={(e) => setSurname(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-700">
+                    Birth Date / Doğum Tarihi
+                  </label>
+
+                  <input
+                    type="date"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                  />
+                </div>
+
+                <select
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                >
+                  <option value="">Select Department / Team</option>
+                  <option value="Frontend">Frontend</option>
+                  <option value="Backend">Backend</option>
+                  <option value="Database">Database</option>
+                  <option value="QA">QA</option>
+                  <option value="DevOps">DevOps</option>
+                  <option value="UI/UX">UI/UX</option>
+                  <option value="IT">IT</option>
+                  <option value="ARGE">ARGE</option>
+                </select>
+              </>
+            )}
+
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800"
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
+
+            {isRegister && (
+              <>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800"
+                  >
+                    {showConfirmPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
+
+                {confirmPassword && (
+                  <p
+                    className={`rounded-xl px-3 py-2 text-sm font-medium ${
+                      passwordsMatch
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-red-50 text-red-600"
+                    }`}
+                  >
+                    {passwordsMatch
+                      ? "Passwords match ✔"
+                      : "Passwords do not match ❌"}
+                  </p>
+                )}
+
+                <div className="space-y-1 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <Rule ok={passwordRules.length} text="At least 8 characters" />
+                  <Rule ok={passwordRules.upper} text="Contains uppercase letter" />
+                  <Rule ok={passwordRules.lower} text="Contains lowercase letter" />
+                  <Rule ok={passwordRules.number} text="Contains number" />
+                  <Rule
+                    ok={passwordRules.special}
+                    text="Contains special character (!@#$%^&*)"
+                  />
+                  <Rule
+                    ok={passwordRules.noName}
+                    text="Must not include your first or last name"
+                  />
+                </div>
+              </>
+            )}
+
+            <button
+              onClick={isRegister ? register : login}
+              disabled={loading}
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "Please wait..." : isRegister ? "Sign Up" : "Login"}
+            </button>
+
+            <p className="text-center text-sm text-slate-600">
+              {isRegister ? "Already have an account?" : "Not a member?"}{" "}
+              <span
+                onClick={() => {
+                  setIsRegister(!isRegister);
+                  setMessage("");
+                  setConfirmPassword("");
+                }}
+                className="cursor-pointer font-semibold text-blue-600 hover:text-blue-700"
+              >
+                {isRegister ? "Login" : "Sign up"}
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

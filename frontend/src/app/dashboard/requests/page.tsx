@@ -9,7 +9,13 @@ type RequestItem = {
   type: string;
   description: string;
   createdBy: string;
+  receiverEmail?: string;
   status: string;
+  projectId?: number | null;
+  taskId?: number | null;
+  requestedValue?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
 };
 
 const requestTypes = [
@@ -17,12 +23,18 @@ const requestTypes = [
   "TEAM_CHANGE",
   "TASK_HELP",
   "DEADLINE_EXTENSION",
+  "PROJECT_JOIN",
+  "PROJECT_LEAVE",
+  "PROJECT_UPDATE",
+  "PROJECT_DEADLINE",
+  "KANBAN_APPROVAL",
   "BUG_REPORT",
   "GENERAL",
 ];
 
 const roles = ["WORKER", "DEVELOPER", "MANAGER"];
 const teams = ["Frontend", "Backend", "Database", "QA", "DevOps", "UI/UX", "IT", "ARGE"];
+const defaultReceiverEmail = "admin@test.com";
 
 export default function RequestsPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -34,23 +46,54 @@ export default function RequestsPage() {
   const [deadlineDate, setDeadlineDate] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const [role, setRole] = useState("");
+  const [email, setEmail] = useState("");
+
+  const [editingRequestId, setEditingRequestId] = useState<number | null>(null);
+  const [editType, setEditType] = useState("GENERAL");
+  const [editDesc, setEditDesc] = useState("");
+  const [editTargetRole, setEditTargetRole] = useState("DEVELOPER");
+  const [editTargetTeam, setEditTargetTeam] = useState("Frontend");
+  const [editTaskInfo, setEditTaskInfo] = useState("");
+  const [editDeadlineDate, setEditDeadlineDate] = useState("");
+
   const router = useRouter();
 
-  const role =
-    typeof window !== "undefined" ? localStorage.getItem("role") : "";
-
-  const email =
-    typeof window !== "undefined" ? localStorage.getItem("email") : "";
-
   useEffect(() => {
-    fetchRequests();
+    const storedRole = localStorage.getItem("role") || "";
+    const storedEmail = localStorage.getItem("email") || "";
+
+    if (!storedEmail) {
+      router.push("/login");
+      return;
+    }
+
+    setRole(storedRole);
+    setEmail(storedEmail);
+    fetchRequests(storedEmail);
   }, []);
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (emailParam = email) => {
     try {
+      const activeEmail = emailParam || localStorage.getItem("email") || "";
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/requests`);
       const data = await res.json();
-      setRequests(Array.isArray(data) ? data : []);
+
+      if (!Array.isArray(data)) {
+        setRequests([]);
+        return;
+      }
+
+      const filteredRequests = data.filter((r) => {
+        const creator = (r.createdBy || "").trim().toLowerCase();
+        const receiver = (r.receiverEmail || "").trim().toLowerCase();
+        const me = activeEmail.trim().toLowerCase();
+
+        return creator === me || receiver === me;
+      });
+
+      setRequests([...filteredRequests].sort((a, b) => b.id - a.id));
     } catch {
       toast.error("Requests could not be loaded");
     } finally {
@@ -58,28 +101,41 @@ export default function RequestsPage() {
     }
   };
 
-  const buildDescription = () => {
-    if (type === "ROLE_CHANGE") {
-      return `Requested Role: ${targetRole}\n\n${desc}`;
+  const buildDescription = (
+    selectedType = type,
+    description = desc,
+    selectedRole = targetRole,
+    selectedTeam = targetTeam,
+    selectedTaskInfo = taskInfo,
+    selectedDeadlineDate = deadlineDate
+  ) => {
+    if (selectedType === "ROLE_CHANGE") {
+      return `Requested Role: ${selectedRole}\n\n${description}`;
     }
 
-    if (type === "TEAM_CHANGE") {
-      return `Requested Team: ${targetTeam}\n\n${desc}`;
+    if (selectedType === "TEAM_CHANGE") {
+      return `Requested Team: ${selectedTeam}\n\n${description}`;
     }
 
-    if (type === "TASK_HELP") {
-      return `Task Info: ${taskInfo}\n\n${desc}`;
+    if (selectedType === "TASK_HELP") {
+      return `Task Info: ${selectedTaskInfo}\n\n${description}`;
     }
 
-    if (type === "DEADLINE_EXTENSION") {
-      return `Requested Deadline: ${deadlineDate || "-"}\nTask Info: ${taskInfo || "-"}\n\n${desc}`;
+    if (selectedType === "DEADLINE_EXTENSION") {
+      return `Requested Deadline: ${selectedDeadlineDate || "-"}\nTask Info: ${selectedTaskInfo || "-"}\n\n${description}`;
     }
 
-    if (type === "BUG_REPORT") {
-      return `Bug Details:\n${desc}`;
+    if (selectedType === "BUG_REPORT") {
+      return `Bug Details:\n${description}`;
     }
 
-    return desc;
+    return description;
+  };
+
+  const resetCreateForm = () => {
+    setDesc("");
+    setTaskInfo("");
+    setDeadlineDate("");
   };
 
   const createRequest = async () => {
@@ -114,10 +170,8 @@ export default function RequestsPage() {
       return;
     }
 
-    setDesc("");
-    setTaskInfo("");
-    setDeadlineDate("");
-    fetchRequests();
+    resetCreateForm();
+    fetchRequests(email);
     toast.success("Request created");
   };
 
@@ -125,7 +179,7 @@ export default function RequestsPage() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/requests/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, reviewedBy: email }),
     });
 
     if (!res.ok) {
@@ -133,8 +187,123 @@ export default function RequestsPage() {
       return;
     }
 
-    fetchRequests();
+    fetchRequests(email);
     toast.success(`Request ${status.toLowerCase()}`);
+  };
+
+  const extractMainDescription = (request: RequestItem) => {
+    const description = request.description || "";
+
+    if (request.type === "ROLE_CHANGE") return description.split("\n").slice(2).join("\n").trim();
+    if (request.type === "TEAM_CHANGE") return description.split("\n").slice(2).join("\n").trim();
+    if (request.type === "TASK_HELP") return description.split("\n").slice(2).join("\n").trim();
+    if (request.type === "DEADLINE_EXTENSION") return description.split("\n").slice(3).join("\n").trim();
+    if (request.type === "BUG_REPORT") return description.replace("Bug Details:", "").trim();
+
+    return description;
+  };
+
+  const startEditRequest = (request: RequestItem) => {
+    const description = request.description || "";
+    const lines = description.split("\n");
+
+    setEditingRequestId(request.id);
+    setEditType(request.type || "GENERAL");
+    setEditDesc(extractMainDescription(request));
+    setEditTargetRole("DEVELOPER");
+    setEditTargetTeam("Frontend");
+    setEditTaskInfo("");
+    setEditDeadlineDate("");
+
+    if (request.type === "ROLE_CHANGE") {
+      const roleLine = lines.find((line) => line.startsWith("Requested Role:"));
+      setEditTargetRole(roleLine?.replace("Requested Role:", "").trim() || "DEVELOPER");
+    }
+
+    if (request.type === "TEAM_CHANGE") {
+      const teamLine = lines.find((line) => line.startsWith("Requested Team:"));
+      setEditTargetTeam(teamLine?.replace("Requested Team:", "").trim() || "Frontend");
+    }
+
+    if (request.type === "TASK_HELP") {
+      const taskLine = lines.find((line) => line.startsWith("Task Info:"));
+      setEditTaskInfo(taskLine?.replace("Task Info:", "").trim() || "");
+    }
+
+    if (request.type === "DEADLINE_EXTENSION") {
+      const deadlineLine = lines.find((line) => line.startsWith("Requested Deadline:"));
+      const taskLine = lines.find((line) => line.startsWith("Task Info:"));
+      setEditDeadlineDate(deadlineLine?.replace("Requested Deadline:", "").trim() || "");
+      setEditTaskInfo(taskLine?.replace("Task Info:", "").trim() || "");
+    }
+  };
+
+  const cancelEditRequest = () => {
+    setEditingRequestId(null);
+    setEditType("GENERAL");
+    setEditDesc("");
+    setEditTargetRole("DEVELOPER");
+    setEditTargetTeam("Frontend");
+    setEditTaskInfo("");
+    setEditDeadlineDate("");
+  };
+
+  const updateRequest = async (request: RequestItem) => {
+    if (!editDesc.trim()) {
+      toast.error("Description cannot be empty");
+      return;
+    }
+
+    if ((editType === "TASK_HELP" || editType === "DEADLINE_EXTENSION") && !editTaskInfo.trim()) {
+      toast.error("Task info is required");
+      return;
+    }
+
+    if (editType === "DEADLINE_EXTENSION" && !editDeadlineDate) {
+      toast.error("Deadline date is required");
+      return;
+    }
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/requests/${request.id}/edit`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: editType,
+        description: buildDescription(
+          editType,
+          editDesc,
+          editTargetRole,
+          editTargetTeam,
+          editTaskInfo,
+          editDeadlineDate
+        ),
+      }),
+    });
+
+    if (!res.ok) {
+      toast.error("Request could not be updated");
+      return;
+    }
+
+    cancelEditRequest();
+    fetchRequests(email);
+    toast.success("Request updated");
+  };
+
+  const deleteRequest = async (request: RequestItem) => {
+    if (!window.confirm("Delete this request?")) return;
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/requests/${request.id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      toast.error("Request could not be deleted");
+      return;
+    }
+
+    fetchRequests(email);
+    toast.success("Request deleted");
   };
 
   const goToProfile = (userEmail?: string | null) => {
@@ -179,62 +348,32 @@ export default function RequestsPage() {
             value={type}
             onChange={(e) => {
               setType(e.target.value);
-              setDesc("");
-              setTaskInfo("");
-              setDeadlineDate("");
+              resetCreateForm();
             }}
           >
             {requestTypes.map((rt) => (
-              <option key={rt} value={rt}>
-                {rt}
-              </option>
+              <option key={rt} value={rt}>{rt}</option>
             ))}
           </select>
 
           {type === "ROLE_CHANGE" && (
-            <select
-              className="border p-3 w-full rounded-xl"
-              value={targetRole}
-              onChange={(e) => setTargetRole(e.target.value)}
-            >
-              {roles.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
+            <select className="border p-3 w-full rounded-xl" value={targetRole} onChange={(e) => setTargetRole(e.target.value)}>
+              {roles.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           )}
 
           {type === "TEAM_CHANGE" && (
-            <select
-              className="border p-3 w-full rounded-xl"
-              value={targetTeam}
-              onChange={(e) => setTargetTeam(e.target.value)}
-            >
-              {teams.map((team) => (
-                <option key={team} value={team}>
-                  {team}
-                </option>
-              ))}
+            <select className="border p-3 w-full rounded-xl" value={targetTeam} onChange={(e) => setTargetTeam(e.target.value)}>
+              {teams.map((team) => <option key={team} value={team}>{team}</option>)}
             </select>
           )}
 
           {(type === "TASK_HELP" || type === "DEADLINE_EXTENSION") && (
-            <input
-              className="border p-3 w-full rounded-xl"
-              placeholder="Task title or task id"
-              value={taskInfo}
-              onChange={(e) => setTaskInfo(e.target.value)}
-            />
+            <input className="border p-3 w-full rounded-xl" placeholder="Task id" value={taskInfo} onChange={(e) => setTaskInfo(e.target.value)} />
           )}
 
           {type === "DEADLINE_EXTENSION" && (
-            <input
-              type="date"
-              className="border p-3 w-full rounded-xl"
-              value={deadlineDate}
-              onChange={(e) => setDeadlineDate(e.target.value)}
-            />
+            <input type="date" className="border p-3 w-full rounded-xl" value={deadlineDate} onChange={(e) => setDeadlineDate(e.target.value)} />
           )}
 
           <textarea
@@ -244,10 +383,7 @@ export default function RequestsPage() {
             onChange={(e) => setDesc(e.target.value)}
           />
 
-          <button
-            onClick={createRequest}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold"
-          >
+          <button onClick={createRequest} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold">
             Create Request
           </button>
         </div>
@@ -257,61 +393,129 @@ export default function RequestsPage() {
             <p className="text-slate-500">No requests yet.</p>
           ) : (
             requests.map((r) => {
-              const isOwnRequest = r.createdBy === email;
+              const isOwnRequest = (r.createdBy || "").toLowerCase() === email.toLowerCase();
+              const isReceiver = (r.receiverEmail || "").toLowerCase() === email.toLowerCase();
+
+              const canEditOrDelete = isOwnRequest && r.status === "PENDING";
+              const canApproveOrReject = isReceiver && r.status === "PENDING";
 
               return (
                 <div key={r.id} className="bg-white border p-5 rounded-2xl shadow-sm">
-                  <div className="flex justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="font-bold text-slate-900">{r.type}</p>
-                      <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">
-                        {r.description}
-                      </p>
+                  {editingRequestId === r.id ? (
+                    <div className="space-y-3">
+                      <select
+                        className="border p-3 w-full rounded-xl"
+                        value={editType}
+                        onChange={(e) => {
+                          setEditType(e.target.value);
+                          setEditDesc("");
+                          setEditTaskInfo("");
+                          setEditDeadlineDate("");
+                        }}
+                      >
+                        {requestTypes.map((rt) => <option key={rt} value={rt}>{rt}</option>)}
+                      </select>
 
-                      <p className="text-xs text-slate-500 mt-3">
-                        Created By:{" "}
-                        <button
-                          onClick={() => goToProfile(r.createdBy)}
-                          className="text-blue-600 underline"
-                        >
-                          {r.createdBy}
+                      {editType === "ROLE_CHANGE" && (
+                        <select className="border p-3 w-full rounded-xl" value={editTargetRole} onChange={(e) => setEditTargetRole(e.target.value)}>
+                          {roles.map((r) => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      )}
+
+                      {editType === "TEAM_CHANGE" && (
+                        <select className="border p-3 w-full rounded-xl" value={editTargetTeam} onChange={(e) => setEditTargetTeam(e.target.value)}>
+                          {teams.map((team) => <option key={team} value={team}>{team}</option>)}
+                        </select>
+                      )}
+
+                      {(editType === "TASK_HELP" || editType === "DEADLINE_EXTENSION") && (
+                        <input className="border p-3 w-full rounded-xl" placeholder="Task id" value={editTaskInfo} onChange={(e) => setEditTaskInfo(e.target.value)} />
+                      )}
+
+                      {editType === "DEADLINE_EXTENSION" && (
+                        <input type="date" className="border p-3 w-full rounded-xl" value={editDeadlineDate} onChange={(e) => setEditDeadlineDate(e.target.value)} />
+                      )}
+
+                      <textarea className="border p-3 w-full rounded-xl min-h-[120px]" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+
+                      <div className="flex gap-2">
+                        <button onClick={() => updateRequest(r)} className="bg-green-500 text-white px-4 py-2 rounded-lg">
+                          Save
                         </button>
 
-                        {isOwnRequest && (
-                          <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                            You
-                          </span>
+                        <button onClick={cancelEditRequest} className="bg-gray-400 text-white px-4 py-2 rounded-lg">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-bold text-slate-900">{r.type}</p>
+
+                          <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">
+                            {r.description}
+                          </p>
+
+                          <p className="text-xs text-slate-500 mt-3">
+                            Created By:{" "}
+                            <button onClick={() => goToProfile(r.createdBy)} className="text-blue-600 underline">
+                              {r.createdBy}
+                            </button>
+
+                            {isOwnRequest && (
+                              <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                You
+                              </span>
+                            )}
+                          </p>
+
+                          <p className="text-xs text-slate-500 mt-2">
+                            Receiver:{" "}
+                            {r.receiverEmail ? (
+                              <button onClick={() => goToProfile(r.receiverEmail)} className="text-blue-600 underline">
+                                {r.receiverEmail}
+                              </button>
+                            ) : (
+                              <span className="text-slate-400">
+                                Assigned by system
+                              </span>
+                            )}
+                          </p>
+                        </div>
+
+                        <span className={`h-fit px-3 py-1 rounded-full text-xs font-bold ${getStatusClass(r.status || "PENDING")}`}>
+                          {r.status || "PENDING"}
+                        </span>
+                      </div>
+
+                      <div className="flex gap-2 mt-4 flex-wrap">
+                        {canApproveOrReject && (
+                          <>
+                            <button onClick={() => updateStatus(r.id, "APPROVED")} className="bg-green-500 text-white px-4 py-2 rounded-lg">
+                              Approve
+                            </button>
+
+                            <button onClick={() => updateStatus(r.id, "REJECTED")} className="bg-red-500 text-white px-4 py-2 rounded-lg">
+                              Reject
+                            </button>
+                          </>
                         )}
-                      </p>
-                    </div>
 
-                    <span
-                      className={`h-fit px-3 py-1 rounded-full text-xs font-bold ${getStatusClass(
-                        r.status || "PENDING"
-                      )}`}
-                    >
-                      {r.status || "PENDING"}
-                    </span>
-                  </div>
+                        {canEditOrDelete && (
+                          <>
+                            <button onClick={() => startEditRequest(r)} className="bg-yellow-500 text-white px-4 py-2 rounded-lg">
+                              Edit
+                            </button>
 
-                  {(role === "ADMIN" || role === "MANAGER") && (
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={() => updateStatus(r.id, "APPROVED")}
-                        disabled={r.status === "APPROVED"}
-                        className="bg-green-500 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg"
-                      >
-                        Approve
-                      </button>
-
-                      <button
-                        onClick={() => updateStatus(r.id, "REJECTED")}
-                        disabled={r.status === "REJECTED"}
-                        className="bg-red-500 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg"
-                      >
-                        Reject
-                      </button>
-                    </div>
+                            <button onClick={() => deleteRequest(r)} className="bg-red-500 text-white px-4 py-2 rounded-lg">
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               );
