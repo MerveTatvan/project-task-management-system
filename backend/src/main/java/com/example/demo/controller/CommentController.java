@@ -1,10 +1,15 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Comment;
+import com.example.demo.model.Notification;
+import com.example.demo.model.User;
 import com.example.demo.repository.CommentRepository;
+import com.example.demo.repository.NotificationRepository;
+import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -15,14 +20,24 @@ public class CommentController {
     @Autowired
     private CommentRepository commentRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
     @GetMapping("/task/{taskId}")
     public List<Comment> getCommentsByTask(@PathVariable Long taskId) {
-        return commentRepository.findByTaskId(taskId);
+        return commentRepository.findByTaskIdOrderByIdDesc(taskId);
     }
 
     @PostMapping
     public Comment addComment(@RequestBody Comment comment) {
-        return commentRepository.save(comment);
+        Comment savedComment = commentRepository.save(comment);
+
+        sendMentionNotifications(savedComment);
+
+        return savedComment;
     }
 
     @PutMapping("/{id}")
@@ -31,8 +46,15 @@ public class CommentController {
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
         comment.setText(updatedComment.getText());
+        comment.setFileUrl(updatedComment.getFileUrl());
+        comment.setFileName(updatedComment.getFileName());
+        comment.setFileType(updatedComment.getFileType());
 
-        return commentRepository.save(comment);
+        Comment savedComment = commentRepository.save(comment);
+
+        sendMentionNotifications(savedComment);
+
+        return savedComment;
     }
 
     @DeleteMapping("/{id}")
@@ -44,4 +66,37 @@ public class CommentController {
         commentRepository.deleteById(id);
         return "Comment deleted";
     }
-} 
+
+    private void sendMentionNotifications(Comment comment) {
+        if (comment.getText() == null || !comment.getText().contains("@")) {
+            return;
+        }
+
+        List<User> users = userRepository.findAll();
+        String text = comment.getText().toLowerCase();
+
+        for (User user : users) {
+            String name = user.getName() == null ? "" : user.getName().toLowerCase();
+            String surname = user.getSurname() == null ? "" : user.getSurname().toLowerCase();
+            String fullName = (name + " " + surname).trim();
+
+            boolean mentioned =
+                    (!name.isEmpty() && text.contains("@" + name)) ||
+                    (!surname.isEmpty() && text.contains("@" + surname)) ||
+                    (!fullName.isEmpty() && text.contains("@" + fullName));
+
+            if (mentioned && user.getEmail() != null && !user.getEmail().equals(comment.getAuthorEmail())) {
+                Notification notification = new Notification();
+                notification.setReceiverEmail(user.getEmail());
+                notification.setTitle("You were mentioned");
+                notification.setMessage(comment.getAuthorEmail() + " mentioned you in a comment.");
+                notification.setType("COMMENT_MENTION");
+                notification.setTaskId(comment.getTaskId());
+                notification.setReadStatus(false);
+                notification.setCreatedAt(LocalDateTime.now().toString());
+
+                notificationRepository.save(notification);
+            }
+        }
+    }
+}

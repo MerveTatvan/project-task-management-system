@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
+    List<Comment> findByTaskIdOrderByIdDesc(Long taskId);
+
     List<Comment> findByTaskId(Long taskId);
 
     void deleteByTaskId(Long taskId);

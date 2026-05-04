@@ -15,6 +15,13 @@ public class Comment {
     @Column(length = 1000)
     private String text;
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String fileUrl;
+
+    private String fileName;
+    private String fileType;
+
     public Long getId() {
         return id;
     }
@@ -41,5 +48,29 @@ public class Comment {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public String getFileUrl() {
+        return fileUrl;
+    }
+
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
     }
 }

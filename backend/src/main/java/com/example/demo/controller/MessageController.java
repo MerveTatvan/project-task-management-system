@@ -4,6 +4,7 @@ import com.example.demo.model.Message;
 import com.example.demo.model.Notification;
 import com.example.demo.repository.MessageRepository;
 import com.example.demo.repository.NotificationRepository;
+import com.example.demo.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,9 @@ public class MessageController {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private EmailService emailService;
+
     @PostMapping
     public Message sendMessage(@RequestBody Message message) {
         message.setTimestamp(LocalDateTime.now().toString());
@@ -37,6 +41,8 @@ public class MessageController {
         notification.setCreatedAt(LocalDateTime.now().toString());
 
         notificationRepository.save(notification);
+
+        emailService.sendMessageEmail(message.getReceiver(), message.getSender());
 
         return savedMessage;
     }
@@ -82,6 +88,10 @@ public class MessageController {
                 .orElseThrow(() -> new RuntimeException("Message not found"));
 
         message.setText(updatedMessage.getText());
+        message.setFileUrl(updatedMessage.getFileUrl());
+        message.setFileName(updatedMessage.getFileName());
+        message.setFileType(updatedMessage.getFileType());
+
         return messageRepository.save(message);
     }
 
