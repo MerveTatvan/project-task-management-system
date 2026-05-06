@@ -10,6 +10,13 @@ type User = {
   email: string;
   role: string;
   department: string;
+  profileImage?: string;
+  profilePhoto?: string;
+  profilePhotoUrl?: string;
+  profileImageUrl?: string;
+  photoUrl?: string;
+  imageUrl?: string;
+  avatarUrl?: string;
 };
 
 export default function AdminPage() {
@@ -109,6 +116,19 @@ export default function AdminPage() {
     const second = user.surname ? user.surname.charAt(0).toUpperCase() : "";
 
     return `${first}${second}` || user.email.charAt(0).toUpperCase();
+  };
+
+  const getProfileImage = (user: User) => {
+    return (
+      user.profileImage ||
+      user.profilePhoto ||
+      user.profilePhotoUrl ||
+      user.profileImageUrl ||
+      user.photoUrl ||
+      user.imageUrl ||
+      user.avatarUrl ||
+      ""
+    );
   };
 
   const totalAdmins = users.filter((user) => user.role === "ADMIN").length;
@@ -238,8 +258,16 @@ export default function AdminPage() {
 
               <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-400 text-lg font-black text-white shadow-lg shadow-blue-500/25">
-                    {getInitials(user)}
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-400 text-lg font-black text-white shadow-lg shadow-blue-500/25">
+                    {getProfileImage(user) ? (
+                      <img
+                        src={getProfileImage(user)}
+                        alt={`${user.name} ${user.surname}`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      getInitials(user)
+                    )}
                   </div>
 
                   <div>

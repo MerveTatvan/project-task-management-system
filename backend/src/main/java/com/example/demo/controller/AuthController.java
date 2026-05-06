@@ -2,7 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.model.User;
+import com.example.demo.model.ActivityLog;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.ActivityLogRepository;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.service.EmailService;
 import com.example.demo.util.PasswordValidator;
@@ -28,6 +30,23 @@ public class AuthController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    private void logAuthActivity(String action, User user, String message) {
+        if (user == null) return;
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setType("SECURITY");
+        activityLog.setTargetId(user.getId());
+        activityLog.setAction(action);
+        activityLog.setActorEmail(user.getEmail());
+        activityLog.setMessage(message);
+        activityLog.setCreatedAt(LocalDateTime.now().toString());
+
+        activityLogRepository.save(activityLog);
+    }
 
     @PostMapping("/register")
     public String register(@RequestBody User user) {
@@ -70,7 +89,13 @@ public class AuthController {
             user.setResetCodeExpire("");
         }
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        logAuthActivity(
+                "ACCOUNT_REGISTERED",
+                savedUser,
+                "Account registered"
+        );
 
         return "Kullanıcı başarıyla kaydedildi";
     }
@@ -91,6 +116,12 @@ public class AuthController {
         }
 
         String token = jwtUtil.generateToken(user);
+
+        logAuthActivity(
+                "LOGIN_SUCCESS",
+                user,
+                "User logged in"
+        );
 
         return Map.of(
                 "token", token,
@@ -206,6 +237,12 @@ public class AuthController {
 
         userRepository.save(user);
 
+        logAuthActivity(
+                "PASSWORD_RESET",
+                user,
+                "Password reset completed"
+        );
+
         emailService.sendEmail(
                 user.getEmail(),
                 "Password Changed",
@@ -241,6 +278,12 @@ public class AuthController {
         user.setPassword(newPassword);
 
         userRepository.save(user);
+
+        logAuthActivity(
+                "PASSWORD_CHANGED",
+                user,
+                "Password changed from profile"
+        );
 
         emailService.sendEmail(
                 user.getEmail(),

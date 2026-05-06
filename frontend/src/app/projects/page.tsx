@@ -1,8 +1,9 @@
 // Target file: frontend/src/app/projects/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   PieChart,
   Pie,
@@ -61,6 +62,11 @@ export default function ProjectsPage() {
   const currentUserRole =
     typeof window !== "undefined" ? localStorage.getItem("role") || "" : "";
 
+  const memberDropdownRef = useRef<HTMLDivElement | null>(null);
+  const memberInputRef = useRef<HTMLInputElement | null>(null);
+  const editMemberDropdownRef = useRef<HTMLDivElement | null>(null);
+  const editMemberInputRef = useRef<HTMLInputElement | null>(null);
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -78,6 +84,11 @@ export default function ProjectsPage() {
   const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(false);
+  const [memberDropdownPosition, setMemberDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -90,6 +101,11 @@ export default function ProjectsPage() {
   const [editSelectedDepartment, setEditSelectedDepartment] = useState("");
   const [showEditMemberSuggestions, setShowEditMemberSuggestions] =
     useState(false);
+  const [editMemberDropdownPosition, setEditMemberDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -133,6 +149,112 @@ export default function ProjectsPage() {
     fetchTasks();
     fetchUsers();
   }, []);
+
+  const updateMemberDropdownPosition = () => {
+    if (memberInputRef.current) {
+      const rect = memberInputRef.current.getBoundingClientRect();
+
+      setMemberDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  };
+
+  const updateEditMemberDropdownPosition = () => {
+    if (editMemberInputRef.current) {
+      const rect = editMemberInputRef.current.getBoundingClientRect();
+
+      setEditMemberDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  };
+
+  const openMemberSuggestions = () => {
+    updateMemberDropdownPosition();
+    setShowMemberSuggestions(true);
+  };
+
+  const openEditMemberSuggestions = () => {
+    updateEditMemberDropdownPosition();
+    setShowEditMemberSuggestions(true);
+  };
+
+  useEffect(() => {
+    if (!showMemberSuggestions) return;
+
+    const handleOutsideMemberClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (memberInputRef.current?.contains(target)) return;
+      if (memberDropdownRef.current?.contains(target)) return;
+
+      setShowMemberSuggestions(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideMemberClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideMemberClick);
+    };
+  }, [showMemberSuggestions]);
+
+  useEffect(() => {
+    if (!showEditMemberSuggestions) return;
+
+    const handleOutsideEditMemberClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (editMemberInputRef.current?.contains(target)) return;
+      if (editMemberDropdownRef.current?.contains(target)) return;
+
+      setShowEditMemberSuggestions(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideEditMemberClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideEditMemberClick);
+    };
+  }, [showEditMemberSuggestions]);
+
+  useEffect(() => {
+    if (!showMemberSuggestions) return;
+
+    const handleRepositionMemberDropdown = () => {
+      updateMemberDropdownPosition();
+    };
+
+    window.addEventListener("scroll", handleRepositionMemberDropdown, true);
+    window.addEventListener("resize", handleRepositionMemberDropdown);
+
+    return () => {
+      window.removeEventListener("scroll", handleRepositionMemberDropdown, true);
+      window.removeEventListener("resize", handleRepositionMemberDropdown);
+    };
+  }, [showMemberSuggestions]);
+
+  useEffect(() => {
+    if (!showEditMemberSuggestions) return;
+
+    const handleRepositionEditMemberDropdown = () => {
+      updateEditMemberDropdownPosition();
+    };
+
+    window.addEventListener("scroll", handleRepositionEditMemberDropdown, true);
+    window.addEventListener("resize", handleRepositionEditMemberDropdown);
+
+    return () => {
+      window.removeEventListener("scroll", handleRepositionEditMemberDropdown, true);
+      window.removeEventListener("resize", handleRepositionEditMemberDropdown);
+    };
+  }, [showEditMemberSuggestions]);
+
+
 
   const normalizeSearchText = (value: string) => {
     return value.replace("@", "").toLowerCase().trim();
@@ -958,38 +1080,55 @@ export default function ProjectsPage() {
             <input
               className="w-full rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
               placeholder="Search by name, email, role or department..."
+              ref={memberInputRef}
               value={memberSearch}
-              onFocus={() => setShowMemberSuggestions(true)}
+              onFocus={openMemberSuggestions}
               onChange={(e) => {
                 setMemberSearch(e.target.value);
-                setShowMemberSuggestions(true);
+                openMemberSuggestions();
               }}
             />
 
-            {showMemberSuggestions && filteredUsers.length > 0 && (
-              <div className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-blue-500/15">
-                {filteredUsers.map((user) => (
-                  <button
-                    key={user.email}
-                    type="button"
-                    onClick={() => addMember(user)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-blue-50"
-                  >
-                    <div>
-                      <p className="font-semibold text-slate-800">
-                        {user.name} {user.surname}
-                      </p>
-                      <p className="text-xs text-slate-500">{user.email}</p>
+            {showMemberSuggestions &&
+              createPortal(
+                <div
+                  ref={memberDropdownRef}
+                  className="fixed max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-blue-500/15"
+                  style={{
+                    top: memberDropdownPosition.top,
+                    left: memberDropdownPosition.left,
+                    width: memberDropdownPosition.width,
+                    zIndex: 999999,
+                  }}
+                >
+                  {filteredUsers.length === 0 ? (
+                    <div className="px-4 py-4 text-sm font-semibold text-slate-400">
+                      No user found.
                     </div>
+                  ) : (
+                    filteredUsers.map((user) => (
+                    <button
+                      key={user.email}
+                      type="button"
+                      onClick={() => addMember(user)}
+                      className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-blue-50"
+                    >
+                      <div>
+                        <p className="font-semibold text-slate-800">
+                          {user.name} {user.surname}
+                        </p>
+                        <p className="text-xs text-slate-500">{user.email}</p>
+                      </div>
 
-                    <div className="text-right text-xs text-slate-500">
-                      <p>{user.role || "No role"}</p>
-                      <p>{user.department || "No department"}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+                      <div className="text-right text-xs text-slate-500">
+                        <p>{user.role || "No role"}</p>
+                        <p>{user.department || "No department"}</p>
+                      </div>
+                    </button>
+                  )))}
+                </div>,
+                document.body
+              )}
           </div>
 
           <div className="mt-4">
@@ -1141,38 +1280,55 @@ export default function ProjectsPage() {
               <input
                 className="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
                 placeholder="Search by name, email, role or department..."
+                ref={editMemberInputRef}
                 value={editMemberSearch}
-                onFocus={() => setShowEditMemberSuggestions(true)}
+                onFocus={openEditMemberSuggestions}
                 onChange={(e) => {
                   setEditMemberSearch(e.target.value);
-                  setShowEditMemberSuggestions(true);
+                  openEditMemberSuggestions();
                 }}
               />
 
-              {showEditMemberSuggestions && filteredEditUsers.length > 0 && (
-                <div className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-amber-200 bg-white shadow-2xl shadow-blue-500/15">
-                  {filteredEditUsers.map((user) => (
-                    <button
-                      key={`edit-${user.email}`}
-                      type="button"
-                      onClick={() => addEditMember(user)}
-                      className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-amber-50"
-                    >
-                      <div>
-                        <p className="font-semibold text-slate-800">
-                          {user.name} {user.surname}
-                        </p>
-                        <p className="text-xs text-slate-500">{user.email}</p>
+              {showEditMemberSuggestions &&
+                createPortal(
+                  <div
+                    ref={editMemberDropdownRef}
+                    className="fixed max-h-64 overflow-y-auto rounded-2xl border border-amber-200 bg-white shadow-2xl shadow-blue-500/15"
+                    style={{
+                      top: editMemberDropdownPosition.top,
+                      left: editMemberDropdownPosition.left,
+                      width: editMemberDropdownPosition.width,
+                      zIndex: 999999,
+                    }}
+                  >
+                    {filteredEditUsers.length === 0 ? (
+                      <div className="px-4 py-4 text-sm font-semibold text-slate-400">
+                        No user found.
                       </div>
+                    ) : (
+                      filteredEditUsers.map((user) => (
+                      <button
+                        key={`edit-${user.email}`}
+                        type="button"
+                        onClick={() => addEditMember(user)}
+                        className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-amber-50"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-800">
+                            {user.name} {user.surname}
+                          </p>
+                          <p className="text-xs text-slate-500">{user.email}</p>
+                        </div>
 
-                      <div className="text-right text-xs text-slate-500">
-                        <p>{user.role || "No role"}</p>
-                        <p>{user.department || "No department"}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                        <div className="text-right text-xs text-slate-500">
+                          <p>{user.role || "No role"}</p>
+                          <p>{user.department || "No department"}</p>
+                        </div>
+                      </button>
+                    )))}
+                  </div>,
+                  document.body
+                )}
             </div>
 
             <div className="mt-4">

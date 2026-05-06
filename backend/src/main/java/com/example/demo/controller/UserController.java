@@ -2,8 +2,10 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Notification;
 import com.example.demo.model.User;
+import com.example.demo.model.ActivityLog;
 import com.example.demo.repository.NotificationRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.ActivityLogRepository;
 import com.example.demo.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +26,21 @@ public class UserController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    private void logUserActivity(String action, String actorEmail, Long targetId, String message) {
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setType("PROFILE");
+        activityLog.setTargetId(targetId);
+        activityLog.setAction(action);
+        activityLog.setActorEmail(actorEmail == null ? "system" : actorEmail);
+        activityLog.setMessage(message);
+        activityLog.setCreatedAt(LocalDateTime.now().toString());
+
+        activityLogRepository.save(activityLog);
+    }
 
     @GetMapping
     public List<User> getAllUsers() {
@@ -76,6 +93,22 @@ public class UserController {
 
         notificationRepository.save(notification);
 
+        logUserActivity(
+                "ROLE_UPDATED",
+                adminEmail,
+                user.getId(),
+                "Role updated for " + user.getEmail() + " to " + newRole
+        );
+
+        ActivityLog userActivityLog = new ActivityLog();
+        userActivityLog.setType("PROFILE");
+        userActivityLog.setTargetId(user.getId());
+        userActivityLog.setAction("MY_ROLE_UPDATED");
+        userActivityLog.setActorEmail(user.getEmail());
+        userActivityLog.setMessage("Your role was updated to " + newRole);
+        userActivityLog.setCreatedAt(LocalDateTime.now().toString());
+        activityLogRepository.save(userActivityLog);
+
         emailService.sendEmail(
                 user.getEmail(),
                 "Role Updated",
@@ -100,17 +133,30 @@ public class UserController {
         User savedUser = userRepository.save(user);
         savedUser.setPassword(null);
 
+        logUserActivity(
+                "PROFILE_UPDATED",
+                savedUser.getEmail(),
+                savedUser.getId(),
+                "Profile updated"
+        );
+
         return savedUser;
     }
 
     @DeleteMapping("/{id}")
     public String deleteUser(@PathVariable Long id) {
 
-        if (!userRepository.existsById(id)) {
-            return "User not found";
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         userRepository.deleteById(id);
+
+        logUserActivity(
+                "USER_DELETED",
+                user.getEmail(),
+                id,
+                "User deleted: " + user.getEmail()
+        );
 
         return "User deleted";
     }

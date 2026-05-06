@@ -52,6 +52,8 @@ export default function ProfilePage() {
 
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [activityFilter, setActivityFilter] = useState("ALL");
 
 
   const passwordRules = {
@@ -155,11 +157,19 @@ export default function ProfilePage() {
     setActivityLoading(true);
 
     try {
-      const res = await fetch(
+      let res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/activity/${encodeURIComponent(
           email
         )}`
       );
+
+      if (!res.ok) {
+        res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/activity/user/${encodeURIComponent(
+            email
+          )}`
+        );
+      }
 
       const data = await res.json();
 
@@ -332,6 +342,25 @@ export default function ProfilePage() {
 
     toast.success(text || "Password changed");
   };
+
+  const activityCategories = [
+    "ALL",
+    "TASK",
+    "PROJECT",
+    "REQUEST",
+    "COMMENT",
+    "MESSAGE",
+    "PROFILE",
+    "SECURITY",
+  ];
+
+  const filteredActivities =
+    activityFilter === "ALL"
+      ? activities
+      : activities.filter((activity) => activity.type === activityFilter);
+
+  const recentActivities = activities.slice(0, 3);
+  const timelineActivities = activities.slice(0, 3);
 
   const Rule = ({ ok, text }: { ok: boolean; text: string }) => (
     <p className={`text-xs ${ok ? "text-emerald-600" : "text-red-500"}`}>
@@ -621,12 +650,21 @@ export default function ProfilePage() {
             </div>
 
             {isOwnProfile && (
-              <button
-                onClick={fetchActivities}
-                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-2xl text-xs font-black border border-indigo-100"
-              >
-                Refresh
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={fetchActivities}
+                  className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-2xl text-xs font-black border border-indigo-100"
+                >
+                  Refresh
+                </button>
+
+                <button
+                  onClick={() => setShowActivityModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-2xl text-xs font-black shadow"
+                >
+                  View all activities
+                </button>
+              </div>
             )}
           </div>
 
@@ -643,7 +681,7 @@ export default function ProfilePage() {
                 </p>
               </div>
             ) : (
-              activities.map((activity) => {
+              recentActivities.map((activity) => {
                 const visual = getActivityVisual(activity.type);
 
                 return (
@@ -692,7 +730,7 @@ export default function ProfilePage() {
             </p>
           ) : (
             <ul className="space-y-3">
-              {activities.slice(0, 8).map((activity) => {
+              {timelineActivities.map((activity) => {
                 const visual = getActivityVisual(activity.type);
 
                 return (
@@ -709,7 +747,104 @@ export default function ProfilePage() {
               })}
             </ul>
           )}
+
+          {activities.length > 0 && (
+            <button
+              onClick={() => setShowActivityModal(true)}
+              className="mt-4 rounded-2xl bg-indigo-50 px-4 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-100"
+            >
+              View full timeline
+            </button>
+          )}
         </div>
+
+        {showActivityModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-4xl rounded-3xl bg-white p-6 shadow-2xl">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900">
+                    All Activities
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Filter and review your full activity history.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowActivityModal(false)}
+                  className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-200"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="mb-4 flex flex-wrap gap-2">
+                {activityCategories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setActivityFilter(category)}
+                    className={`rounded-full px-4 py-2 text-xs font-black transition ${
+                      activityFilter === category
+                        ? "bg-indigo-600 text-white shadow"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+
+              <div className="max-h-[65vh] space-y-3 overflow-y-auto pr-1">
+                {filteredActivities.length === 0 ? (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center">
+                    <p className="text-sm font-bold text-slate-500">
+                      No activities found for this filter.
+                    </p>
+                  </div>
+                ) : (
+                  filteredActivities.map((activity) => {
+                    const visual = getActivityVisual(activity.type);
+
+                    return (
+                      <div
+                        key={`modal-activity-${activity.id}`}
+                        className="flex justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-black ${visual.iconClass}`}
+                          >
+                            {visual.icon}
+                          </span>
+
+                          <div>
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-black ${visual.badgeClass}`}
+                            >
+                              {visual.label}
+                            </span>
+
+                            <p className="mt-2 font-bold text-slate-800">
+                              {activity.action}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-500">
+                              {activity.createdAt
+                                ? formatActivityDate(activity.createdAt)
+                                : ""}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

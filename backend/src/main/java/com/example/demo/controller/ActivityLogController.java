@@ -20,6 +20,11 @@ public class ActivityLogController {
         return activityLogRepository.findTop50ByOrderByIdDesc();
     }
 
+    @GetMapping("/{email}")
+    public List<ActivityLog> getUserActivitiesShortPath(@PathVariable String email) {
+        return activityLogRepository.findByActorEmailOrderByIdDesc(email);
+    }
+
     @GetMapping("/{type}/{targetId}")
     public List<ActivityLog> getActivitiesByTypeAndTarget(
             @PathVariable String type,

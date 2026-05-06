@@ -2,8 +2,10 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Message;
 import com.example.demo.model.Notification;
+import com.example.demo.model.ActivityLog;
 import com.example.demo.repository.MessageRepository;
 import com.example.demo.repository.NotificationRepository;
+import com.example.demo.repository.ActivityLogRepository;
 import com.example.demo.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -25,11 +27,35 @@ public class MessageController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    private void logMessageActivity(String action, Message message, String actorEmail, String activityMessage) {
+        if (message == null) return;
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setType("MESSAGE");
+        activityLog.setTargetId(message.getId());
+        activityLog.setAction(action);
+        activityLog.setActorEmail(actorEmail == null ? "system" : actorEmail);
+        activityLog.setMessage(activityMessage);
+        activityLog.setCreatedAt(LocalDateTime.now().toString());
+
+        activityLogRepository.save(activityLog);
+    }
+
     @PostMapping
     public Message sendMessage(@RequestBody Message message) {
         message.setTimestamp(LocalDateTime.now().toString());
 
         Message savedMessage = messageRepository.save(message);
+
+        logMessageActivity(
+                "MESSAGE_SENT",
+                savedMessage,
+                savedMessage.getSender(),
+                "Message sent to " + savedMessage.getReceiver()
+        );
 
         Notification notification = new Notification();
         notification.setReceiverEmail(message.getReceiver());
@@ -74,6 +100,15 @@ public class MessageController {
 
         messageRepository.deleteAll(messages);
 
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setType("MESSAGE");
+        activityLog.setTargetId(null);
+        activityLog.setAction("CHAT_DELETED");
+        activityLog.setActorEmail(user1);
+        activityLog.setMessage("Conversation deleted with " + user2);
+        activityLog.setCreatedAt(LocalDateTime.now().toString());
+        activityLogRepository.save(activityLog);
+
         return "Conversation deleted";
     }
 
@@ -92,16 +127,32 @@ public class MessageController {
         message.setFileName(updatedMessage.getFileName());
         message.setFileType(updatedMessage.getFileType());
 
-        return messageRepository.save(message);
+        Message savedMessage = messageRepository.save(message);
+
+        logMessageActivity(
+                "MESSAGE_UPDATED",
+                savedMessage,
+                savedMessage.getSender(),
+                "Message updated"
+        );
+
+        return savedMessage;
     }
 
     @DeleteMapping("/{id}")
     public String deleteMessage(@PathVariable Long id) {
-        if (!messageRepository.existsById(id)) {
-            return "Message not found";
-        }
+        Message message = messageRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
 
         messageRepository.deleteById(id);
+
+        logMessageActivity(
+                "MESSAGE_DELETED",
+                message,
+                message.getSender(),
+                "Message deleted"
+        );
+
         return "Message deleted";
     }
 }

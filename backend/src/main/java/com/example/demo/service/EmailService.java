@@ -11,6 +11,11 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    private static final String AUTO_MAIL_FOOTER =
+            "\n\n---\n"
+                    + "This is an automated email from Project Task Management System.\n"
+                    + "Please do not reply to this message.";
+
     // 🔹 GENEL MAIL GÖNDER
     public void sendEmail(String to, String subject, String body) {
         if (to == null || to.trim().isEmpty()) return;
@@ -19,7 +24,7 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(to);
             message.setSubject(subject);
-            message.setText(body);
+            message.setText((body == null ? "" : body) + AUTO_MAIL_FOOTER);
 
             mailSender.send(message);
         } catch (Exception e) {

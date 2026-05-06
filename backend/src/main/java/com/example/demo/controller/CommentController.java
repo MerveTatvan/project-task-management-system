@@ -3,9 +3,11 @@ package com.example.demo.controller;
 import com.example.demo.model.Comment;
 import com.example.demo.model.Notification;
 import com.example.demo.model.User;
+import com.example.demo.model.ActivityLog;
 import com.example.demo.repository.CommentRepository;
 import com.example.demo.repository.NotificationRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.ActivityLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +30,23 @@ public class CommentController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    private void logCommentActivity(String action, Comment comment, String actorEmail, String message) {
+        if (comment == null) return;
+
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setType("COMMENT");
+        activityLog.setTargetId(comment.getTaskId());
+        activityLog.setAction(action);
+        activityLog.setActorEmail(actorEmail == null ? "system" : actorEmail);
+        activityLog.setMessage(message);
+        activityLog.setCreatedAt(LocalDateTime.now().toString());
+
+        activityLogRepository.save(activityLog);
+    }
+
     @GetMapping("/task/{taskId}")
     public List<Comment> getCommentsByTask(@PathVariable Long taskId) {
         return commentRepository.findByTaskIdOrderByIdDesc(taskId);
@@ -38,6 +57,13 @@ public class CommentController {
         validateCommentAttachment(comment);
 
         Comment savedComment = commentRepository.save(comment);
+
+        logCommentActivity(
+                "COMMENT_ADDED",
+                savedComment,
+                savedComment.getAuthorEmail(),
+                "Comment added to task #" + savedComment.getTaskId()
+        );
 
         sendMentionNotifications(savedComment);
 
@@ -59,6 +85,13 @@ public class CommentController {
 
         Comment savedComment = commentRepository.save(comment);
 
+        logCommentActivity(
+                "COMMENT_ADDED",
+                savedComment,
+                savedComment.getAuthorEmail(),
+                "Comment added to task #" + savedComment.getTaskId()
+        );
+
         sendMentionNotifications(savedComment);
 
         return savedComment;
@@ -75,6 +108,14 @@ public class CommentController {
         validateCommentOwnerOrAdmin(comment, userEmail);
 
         commentRepository.deleteById(id);
+
+        logCommentActivity(
+                "COMMENT_DELETED",
+                comment,
+                userEmail,
+                "Comment deleted from task #" + comment.getTaskId()
+        );
+
         return "Comment deleted";
     }
 

@@ -92,6 +92,13 @@ export default function Dashboard() {
   const [assignedTo, setAssignedTo] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [assignMode, setAssignMode] = useState<"user" | "team">("user");
+  const [assignUserSearch, setAssignUserSearch] = useState("");
+  const [showAssignUserSuggestions, setShowAssignUserSuggestions] = useState(false);
+  const [assignDropdownPosition, setAssignDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   const [teamFilter, setTeamFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -129,6 +136,11 @@ export default function Dashboard() {
 
   const notificationPanelRef = useRef<HTMLDivElement | null>(null);
   const notificationButtonRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const profileButtonRef = useRef<HTMLDivElement | null>(null);
+  const assignUserBoxRef = useRef<HTMLDivElement | null>(null);
+  const assignUserInputRef = useRef<HTMLInputElement | null>(null);
+  const assignUserDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
 
@@ -176,6 +188,60 @@ export default function Dashboard() {
       document.removeEventListener("mousedown", handleOutsideNotificationClick);
     };
   }, [showNotifications]);
+
+  useEffect(() => {
+    if (!showProfileMenu) return;
+
+    const handleOutsideProfileMenuClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (profileMenuRef.current?.contains(target)) return;
+      if (profileButtonRef.current?.contains(target)) return;
+
+      setShowProfileMenu(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideProfileMenuClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideProfileMenuClick);
+    };
+  }, [showProfileMenu]);
+
+  useEffect(() => {
+    if (!showAssignUserSuggestions) return;
+
+    const handleOutsideAssignUserClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (assignUserBoxRef.current?.contains(target)) return;
+      if (assignUserDropdownRef.current?.contains(target)) return;
+
+      setShowAssignUserSuggestions(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideAssignUserClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideAssignUserClick);
+    };
+  }, [showAssignUserSuggestions]);
+
+  useEffect(() => {
+    if (!showAssignUserSuggestions) return;
+
+    const handleRepositionAssignDropdown = () => {
+      updateAssignUserDropdownPosition();
+    };
+
+    window.addEventListener("scroll", handleRepositionAssignDropdown, true);
+    window.addEventListener("resize", handleRepositionAssignDropdown);
+
+    return () => {
+      window.removeEventListener("scroll", handleRepositionAssignDropdown, true);
+      window.removeEventListener("resize", handleRepositionAssignDropdown);
+    };
+  }, [showAssignUserSuggestions]);
 
   useEffect(() => {
     tasks.forEach((task) => {
@@ -620,7 +686,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="relative">
+        <div className="relative" ref={profileButtonRef}>
           <button
             onClick={() => {
               setShowProfileMenu((prev) => !prev);
@@ -734,6 +800,7 @@ export default function Dashboard() {
 
     const profileMenu = showProfileMenu ? (
       <div
+        ref={profileMenuRef}
         className="fixed right-10 top-24 w-56 bg-white border border-blue-100 rounded-3xl shadow-2xl p-3"
         style={{ zIndex: 70 }}
       >
@@ -986,10 +1053,64 @@ export default function Dashboard() {
     ]),
   );
 
+  const currentUser = users.find(
+    (u) => (u.email || "").toLowerCase() === (currentEmail || "").toLowerCase()
+  );
+
+  const currentUserDepartment = currentUser?.department || "";
+
+  const updateAssignUserDropdownPosition = () => {
+    if (assignUserInputRef.current) {
+      const rect = assignUserInputRef.current.getBoundingClientRect();
+
+      setAssignDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  };
+
+  const openAssignUserSuggestions = () => {
+    updateAssignUserDropdownPosition();
+    setShowAssignUserSuggestions(true);
+  };
+
   const usersBySelectedTeam = users.filter((u) => {
-    if (!selectedTeam) return false;
+    if (role === "ADMIN") {
+      if (!selectedTeam) return true;
+      return u.department === selectedTeam;
+    }
+
+    if (role === "MANAGER") {
+      return u.department === currentUserDepartment;
+    }
+
+    if (!selectedTeam) return true;
     return u.department === selectedTeam;
   });
+
+  const normalizeAssignSearch = (value: string) => {
+    return value.toLowerCase().trim();
+  };
+
+  const filteredAssignUsers = usersBySelectedTeam
+    .filter((u) => {
+      const search = normalizeAssignSearch(assignUserSearch);
+
+      if (!search) return true;
+
+      const fullText = `${u.name || ""} ${u.surname || ""} ${u.email || ""} ${
+        u.role || ""
+      } ${u.department || ""}`.toLowerCase();
+
+      return fullText.includes(search);
+    })
+    .slice(0, 10);
+
+  const selectedAssignedUser = assignedTo
+    ? users.find((u) => u.email === assignedTo)
+    : null;
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -1113,7 +1234,11 @@ export default function Dashboard() {
       return;
     }
 
-    if ((userRole === "ADMIN" || userRole === "MANAGER") && !selectedTeam) {
+    if (
+      (userRole === "ADMIN" || userRole === "MANAGER") &&
+      assignMode === "team" &&
+      !selectedTeam
+    ) {
       toast.error("Please select a team");
       return;
     }
@@ -1149,7 +1274,7 @@ export default function Dashboard() {
           status: "TODO",
           createdBy: userEmail,
           assignmentType: "TEAM",
-          teamName: selectedTeam,
+          teamName: role === "MANAGER" && !selectedTeam ? currentUserDepartment : selectedTeam,
           priority: newPriority,
           dueDate: newDueDate,
           projectId: newProjectId ? Number(newProjectId) : null,
@@ -1166,6 +1291,8 @@ export default function Dashboard() {
       setNewDueDate("");
       setNewProjectId("");
       setAssignedTo("");
+      setAssignUserSearch("");
+      setShowAssignUserSuggestions(false);
       setSelectedTeam("");
       fetchTasks();
       fetchNotifications();
@@ -1186,7 +1313,7 @@ export default function Dashboard() {
         status: "TODO",
         createdBy: userEmail,
         assignmentType: "USER",
-        teamName: selectedTeam,
+        teamName: role === "MANAGER" && !selectedTeam ? currentUserDepartment : selectedTeam,
         priority: newPriority,
         dueDate: newDueDate,
         projectId: newProjectId ? Number(newProjectId) : null,
@@ -1202,6 +1329,8 @@ export default function Dashboard() {
     setNewPriority("MEDIUM");
     setNewDueDate("");
     setAssignedTo("");
+    setAssignUserSearch("");
+    setShowAssignUserSuggestions(false);
     setSelectedTeam("");
     fetchTasks();
     fetchNotifications();
@@ -1579,6 +1708,8 @@ export default function Dashboard() {
                   onChange={(e) => {
                     setAssignMode(e.target.value as "user" | "team");
                     setAssignedTo("");
+                    setAssignUserSearch("");
+                    setShowAssignUserSuggestions(false);
                   }}
                 >
                   <option value="user">Assign to User</option>
@@ -1593,9 +1724,13 @@ export default function Dashboard() {
               onChange={(e) => {
                 setSelectedTeam(e.target.value);
                 setAssignedTo("");
+                setAssignUserSearch("");
+                setShowAssignUserSuggestions(false);
               }}
             >
-              <option value="">Select team</option>
+              <option value="">
+                {role === "ADMIN" ? "All departments / optional for user assignment" : "Your department users only"}
+              </option>
               {teams.map((team) => (
                 <option key={team} value={team}>
                   {team}
@@ -1604,23 +1739,102 @@ export default function Dashboard() {
             </select>
 
             {assignMode === "user" && (
-              <select
-                className="border border-white/70 bg-blue-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:bg-slate-100"
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                disabled={!selectedTeam}
-              >
-                <option value="">
-                  {selectedTeam ? "Select user" : "Select a team first"}
-                </option>
+              <div ref={assignUserBoxRef} className="relative">
+                <input
+                  ref={assignUserInputRef}
+                  className="border border-white/70 bg-blue-50/80 p-3 w-full rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-200"
+                  value={assignUserSearch}
+                  onFocus={openAssignUserSuggestions}
+                  onChange={(e) => {
+                    setAssignUserSearch(e.target.value);
+                    setAssignedTo("");
+                    openAssignUserSuggestions();
+                  }}
+                  placeholder={
+                    selectedTeam
+                      ? "Search user in selected department..."
+                      : role === "ADMIN"
+                      ? "Search any user by name, email, role or department..."
+                      : "Search user in your department..."
+                  }
+                />
 
-                {usersBySelectedTeam.map((u) => (
-                  <option key={u.id} value={u.email}>
-                    {u.name} {u.surname} - {u.role} -{" "}
-                    {u.department || "No Team"}
-                  </option>
-                ))}
-              </select>
+                {selectedAssignedUser && (
+                  <div className="mt-2 flex items-center justify-between rounded-2xl border border-blue-100 bg-white/90 px-4 py-3 text-sm shadow-sm">
+                    <div>
+                      <p className="font-black text-blue-950">
+                        {selectedAssignedUser.name} {selectedAssignedUser.surname}
+                      </p>
+                      <p className="text-xs text-blue-700/60">
+                        {selectedAssignedUser.email} • {selectedAssignedUser.role || "-"} •{" "}
+                        {selectedAssignedUser.department || "No Team"}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssignedTo("");
+                        setAssignUserSearch("");
+                        openAssignUserSuggestions();
+                      }}
+                      className="rounded-xl bg-rose-50 px-3 py-1 text-xs font-black text-rose-600 hover:bg-rose-100"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+
+                {mounted &&
+                  showAssignUserSuggestions &&
+                  !assignedTo &&
+                  createPortal(
+                    <div
+                      ref={assignUserDropdownRef}
+                      className="fixed max-h-80 overflow-y-auto rounded-3xl border border-blue-100 bg-white shadow-2xl"
+                      style={{
+                        top: assignDropdownPosition.top,
+                        left: assignDropdownPosition.left,
+                        width: assignDropdownPosition.width,
+                        zIndex: 999999,
+                      }}
+                    >
+                      {filteredAssignUsers.length === 0 ? (
+                        <div className="px-4 py-4 text-sm font-semibold text-slate-400">
+                          No user found.
+                        </div>
+                      ) : (
+                        filteredAssignUsers.map((u) => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => {
+                              setAssignedTo(u.email);
+                              setAssignUserSearch(
+                                `${u.name || ""} ${u.surname || ""}`.trim() || u.email
+                              );
+                              setShowAssignUserSuggestions(false);
+                            }}
+                            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-blue-50"
+                          >
+                            <div>
+                              <p className="font-black text-blue-950">
+                                {u.name} {u.surname}
+                              </p>
+                              <p className="text-xs text-blue-700/60">{u.email}</p>
+                            </div>
+
+                            <div className="text-right text-xs text-slate-500">
+                              <p className="font-bold">{u.role || "-"}</p>
+                              <p>{u.department || "No Team"}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>,
+                    document.body
+                  )}
+              </div>
             )}
 
             <button
