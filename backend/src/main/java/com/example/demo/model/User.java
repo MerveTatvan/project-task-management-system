@@ -12,11 +12,18 @@ public class User {
 
     private String name;
     private String surname;
+
+    @Column(unique = true)
     private String email;
+
+    @Column(length = 255)
     private String password;
+
     private String role;
     private String department;
     private String birthDate;
+
+    @Column(length = 2000)
     private String extraInfo;
 
     private String linkedin;

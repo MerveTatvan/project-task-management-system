@@ -54,6 +54,7 @@ public class CommentController {
 
     @PostMapping
     public Comment addComment(@RequestBody Comment comment) {
+
         validateCommentAttachment(comment);
 
         Comment savedComment = commentRepository.save(comment);
@@ -72,6 +73,7 @@ public class CommentController {
 
     @PutMapping("/{id}")
     public Comment updateComment(@PathVariable Long id, @RequestBody Comment updatedComment) {
+
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
@@ -86,10 +88,10 @@ public class CommentController {
         Comment savedComment = commentRepository.save(comment);
 
         logCommentActivity(
-                "COMMENT_ADDED",
+                "COMMENT_UPDATED",
                 savedComment,
                 savedComment.getAuthorEmail(),
-                "Comment added to task #" + savedComment.getTaskId()
+                "Comment updated on task #" + savedComment.getTaskId()
         );
 
         sendMentionNotifications(savedComment);
@@ -102,6 +104,7 @@ public class CommentController {
             @PathVariable Long id,
             @RequestParam(required = false) String userEmail
     ) {
+
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
@@ -120,20 +123,29 @@ public class CommentController {
     }
 
     private void validateCommentAttachment(Comment comment) {
+
         if (comment == null) return;
 
-        if (comment.getFileUrl() != null && comment.getFileUrl().length() > MAX_FILE_DATA_LENGTH) {
-            throw new RuntimeException("File is too large. Maximum allowed size is 500 KB.");
+        if (
+                comment.getFileUrl() != null &&
+                comment.getFileUrl().length() > MAX_FILE_DATA_LENGTH
+        ) {
+            throw new RuntimeException(
+                    "File is too large. Maximum allowed size is 500 KB."
+            );
         }
     }
 
     private void validateCommentOwnerOrAdmin(Comment comment, String userEmail) {
+
         if (comment == null) {
             throw new RuntimeException("Comment not found");
         }
 
         if (userEmail == null || userEmail.trim().isEmpty()) {
-            throw new RuntimeException("User email is required for this action");
+            throw new RuntimeException(
+                    "User email is required for this action"
+            );
         }
 
         String cleanEmail = userEmail.trim();
@@ -142,26 +154,45 @@ public class CommentController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         boolean isAdmin = "ADMIN".equals(user.getRole());
+
         boolean isOwner =
                 comment.getAuthorEmail() != null &&
-                        comment.getAuthorEmail().trim().equalsIgnoreCase(cleanEmail);
+                comment.getAuthorEmail()
+                        .trim()
+                        .equalsIgnoreCase(cleanEmail);
 
         if (!isAdmin && !isOwner) {
-            throw new RuntimeException("Only comment owner or admin can modify this comment");
+            throw new RuntimeException(
+                    "Only comment owner or admin can modify this comment"
+            );
         }
     }
 
     private void sendMentionNotifications(Comment comment) {
-        if (comment.getText() == null || !comment.getText().contains("@")) {
+
+        if (
+                comment.getText() == null ||
+                !comment.getText().contains("@")
+        ) {
             return;
         }
 
         List<User> users = userRepository.findAll();
+
         String text = comment.getText().toLowerCase();
 
         for (User user : users) {
-            String name = user.getName() == null ? "" : user.getName().toLowerCase();
-            String surname = user.getSurname() == null ? "" : user.getSurname().toLowerCase();
+
+            String name =
+                    user.getName() == null
+                            ? ""
+                            : user.getName().toLowerCase();
+
+            String surname =
+                    user.getSurname() == null
+                            ? ""
+                            : user.getSurname().toLowerCase();
+
             String fullName = (name + " " + surname).trim();
 
             boolean mentioned =
@@ -169,14 +200,29 @@ public class CommentController {
                     (!surname.isEmpty() && text.contains("@" + surname)) ||
                     (!fullName.isEmpty() && text.contains("@" + fullName));
 
-            if (mentioned && user.getEmail() != null && !user.getEmail().equals(comment.getAuthorEmail())) {
+            if (
+                    mentioned &&
+                    user.getEmail() != null &&
+                    !user.getEmail().equals(comment.getAuthorEmail())
+            ) {
+
                 Notification notification = new Notification();
+
                 notification.setReceiverEmail(user.getEmail());
+
                 notification.setTitle("You were mentioned");
-                notification.setMessage(comment.getAuthorEmail() + " mentioned you in a comment.");
+
+                notification.setMessage(
+                        comment.getAuthorEmail() +
+                                " mentioned you in a comment."
+                );
+
                 notification.setType("COMMENT_MENTION");
+
                 notification.setTaskId(comment.getTaskId());
+
                 notification.setReadStatus(false);
+
                 notification.setCreatedAt(LocalDateTime.now().toString());
 
                 notificationRepository.save(notification);

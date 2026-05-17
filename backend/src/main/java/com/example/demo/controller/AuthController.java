@@ -9,6 +9,7 @@ import com.example.demo.security.JwtUtil;
 import com.example.demo.service.EmailService;
 import com.example.demo.util.PasswordValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -34,6 +35,9 @@ public class AuthController {
     @Autowired
     private ActivityLogRepository activityLogRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private void logAuthActivity(String action, User user, String message) {
         if (user == null) return;
 
@@ -48,6 +52,35 @@ public class AuthController {
         activityLogRepository.save(activityLog);
     }
 
+    private boolean isBCryptHash(String password) {
+        if (password == null) return false;
+
+        return password.startsWith("$2a$")
+                || password.startsWith("$2b$")
+                || password.startsWith("$2y$");
+    }
+
+    private boolean passwordMatches(String rawPassword, String storedPassword) {
+        if (rawPassword == null || storedPassword == null) {
+            return false;
+        }
+
+        if (isBCryptHash(storedPassword)) {
+            return passwordEncoder.matches(rawPassword, storedPassword);
+        }
+
+        return storedPassword.equals(rawPassword);
+    }
+
+    private void upgradePlainPasswordToHashIfNeeded(User user, String rawPassword) {
+        if (user == null || rawPassword == null) return;
+
+        if (!isBCryptHash(user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(rawPassword));
+            userRepository.save(user);
+        }
+    }
+
     @PostMapping("/register")
     public String register(@RequestBody User user) {
 
@@ -58,6 +91,8 @@ public class AuthController {
         if (!PasswordValidator.isValid(user.getPassword(), user.getName(), user.getSurname())) {
             return "Şifre kurallara uymuyor";
         }
+
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         if ("admin@test.com".equals(user.getEmail())) {
             user.setRole("ADMIN");
@@ -111,9 +146,11 @@ public class AuthController {
 
         User user = foundUser.get();
 
-        if (!user.getPassword().equals(loginRequest.getPassword())) {
+        if (!passwordMatches(loginRequest.getPassword(), user.getPassword())) {
             return "Şifre yanlış";
         }
+
+        upgradePlainPasswordToHashIfNeeded(user, loginRequest.getPassword());
 
         String token = jwtUtil.generateToken(user);
 
@@ -231,7 +268,7 @@ public class AuthController {
             return "Şifre kurallara uymuyor";
         }
 
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
         user.setResetCode("");
         user.setResetCodeExpire("");
 
@@ -267,7 +304,7 @@ public class AuthController {
 
         User user = foundUser.get();
 
-        if (!user.getPassword().equals(oldPassword)) {
+        if (!passwordMatches(oldPassword, user.getPassword())) {
             return "Eski şifre yanlış";
         }
 
@@ -275,7 +312,7 @@ public class AuthController {
             return "Şifre kurallara uymuyor";
         }
 
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
 
         userRepository.save(user);
 

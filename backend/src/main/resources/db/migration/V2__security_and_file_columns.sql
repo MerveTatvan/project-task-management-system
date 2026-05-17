@@ -1,0 +1,7 @@
+ALTER TABLE users MODIFY password VARCHAR(255);
+
+ALTER TABLE users MODIFY profile_image LONGTEXT;
+
+ALTER TABLE comments MODIFY file_url LONGTEXT;
+
+ALTER TABLE messages MODIFY file_url LONGTEXT;
